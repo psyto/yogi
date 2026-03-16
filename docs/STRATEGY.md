@@ -2,7 +2,7 @@
 
 ## Thesis
 
-Drift's hybrid AMM creates structural inefficiencies (OI imbalance, mark/oracle premium, funding rate skew) that mean-revert predictably. Kuma captures these with a composite signal. Yogi adds a second dimension: **forward-looking anomaly detection** that senses market stress before vol-based indicators react.
+Drift's hybrid AMM creates structural inefficiencies (OI imbalance, mark/oracle premium, funding rate skew) that mean-revert predictably. Traditional basis vaults capture these with a composite signal. Yogi adds a second dimension: **forward-looking anomaly detection** that senses market stress before vol-based indicators react.
 
 **Core insight**: Vol-based leverage scaling is reactive — it reduces exposure *after* volatility has already spiked. By then, slippage is high, liquidity is thin, and drawdowns have already occurred. Yogi's signal detector monitors leading indicators (OI shifts, liquidation cascades, funding instability, spread blow-outs) that precede vol spikes, enabling proactive position reduction.
 
@@ -225,9 +225,9 @@ Monitored every **30 seconds** — 480x more frequent than the 4-hour rebalance.
 
 ## Backtest Results (Feb 13 – Mar 16, 2026)
 
-32-day comparative backtest (Kuma vs Yogi on identical data):
+32-day comparative backtest (Baseline vs Yogi on identical data):
 
-| Metric | Kuma | Yogi | Delta |
+| Metric | Baseline (vol-only) | Yogi | Delta |
 |--------|------|------|-------|
 | Final equity | $100,619 | $100,516 | -$103 |
 | Total return | +0.62% | +0.52% | -0.10% |
@@ -249,9 +249,9 @@ Monitored every **30 seconds** — 480x more frequent than the 4-hour rebalance.
 
 The 32-day period was **calm** — no HIGH or CRITICAL signals fired. Yogi's advantage is structural:
 
-- **In calm markets**: Yogi slightly underperforms Kuma due to conservative LOW-signal deployment (70% vs 100%). The cost is ~1.2% APY.
-- **In stress events**: Yogi avoids drawdowns that Kuma takes. The 21% lower max drawdown demonstrates this even in a calm period.
-- **The real test**: A liquidation cascade or funding rate whipsaw would trigger HIGH/CRITICAL signals, causing Yogi to pull back to 15-30% deployment while Kuma remains at 50-100%.
+- **In calm markets**: Yogi slightly underperforms the baseline due to conservative LOW-signal deployment (70% vs 100%). The cost is ~1.2% APY.
+- **In stress events**: Yogi avoids drawdowns that vol-only strategies take. The 21% lower max drawdown demonstrates this even in a calm period.
+- **The real test**: A liquidation cascade or funding rate whipsaw would trigger HIGH/CRITICAL signals, causing Yogi to pull back to 15-30% deployment while the baseline remains at 50-100%.
 
 ### Backtest Limitations
 

@@ -2,7 +2,7 @@
 
 **Smarter than the average bear market vault. Drift basis trade alpha with intelligent signal detection on Solana.**
 
-Yogi is a production-grade USDC vault that combines Kuma's proven funding rate arbitrage with a forward-looking anomaly detection engine. Four Drift-specific signal dimensions — OI imbalance shift, liquidation cascades, funding rate volatility, and spread blow-outs — drive a regime engine that adapts deployment and leverage before stress hits. The result: Kuma's bear market alpha with proactive risk management.
+Yogi is a production-grade USDC vault that combines proven Drift funding rate arbitrage with a forward-looking anomaly detection engine. Four Drift-specific signal dimensions — OI imbalance shift, liquidation cascades, funding rate volatility, and spread blow-outs — drive a regime engine that adapts deployment and leverage before stress hits. The result: bear market alpha with proactive risk management.
 
 ## Strategy
 
@@ -48,14 +48,14 @@ User deposits USDC --> Voltr Vault
                                    +-- Low turnover: 7-day min hold
 ```
 
-### What Makes Yogi Different from Kuma
+### What Makes Yogi Different
 
-Kuma uses volatility alone to scale leverage. In a low-vol bear market with building contagion risk, Kuma stays fully deployed at 2x leverage — blind to the approaching storm.
+Traditional basis trade vaults use volatility alone to scale leverage. In a low-vol bear market with building contagion risk, vol-only strategies stay fully deployed at 2x leverage — blind to the approaching storm.
 
 Yogi sees it coming. The signal detector monitors four anomaly dimensions every 5 minutes. When OI shifts rapidly, spreads blow out, or funding volatility spikes, Yogi reduces deployment and leverage *before* the vol regime catches up. When signals clear, Yogi scales back up.
 
-| Scenario | Kuma | Yogi |
-|----------|------|------|
+| Scenario | Vol-Only Baseline | Yogi |
+|----------|-------------------|------|
 | Low vol, no stress | 100% @ 2.0x | 100% @ 2.0x (same) |
 | Low vol, OI shifting | 100% @ 2.0x (blind) | 80% @ 1.5x (cautious) |
 | Low vol, liquidation cascade | 100% @ 2.0x (blind) | 25% @ 0.5x (defensive) |
@@ -160,7 +160,7 @@ All orders use maker limit orders (`postOnly`) for fee rebates:
 
 32-day comparative backtest (Feb 13 – Mar 16, 2026):
 
-| Metric | Kuma (baseline) | Yogi (intelligent) |
+| Metric | Baseline (vol-only) | Yogi (intelligent) |
 |--------|----------------|-------------------|
 | Final equity | $100,619 | $100,516 |
 | Total return | +0.62% | +0.52% |
@@ -169,7 +169,7 @@ All orders use maker limit orders (`postOnly`) for fee rebates:
 | Sharpe ratio | 17.64 | 17.60 |
 | Trading costs | $371 | **$312 (-16%)** |
 
-**Why Yogi's APY is lower**: The 32-day period was calm — no HIGH or CRITICAL signals fired. Yogi's conservative LOW-signal deployment (70% vs 100%) reduced returns slightly. In a stress event, this relationship flips: Yogi avoids losses that Kuma takes.
+**Why Yogi's APY is lower**: The 32-day period was calm — no HIGH or CRITICAL signals fired. Yogi's conservative LOW-signal deployment (70% vs 100%) reduced returns slightly. In a stress event, this relationship flips: Yogi avoids losses that vol-only strategies take.
 
 **Backtest limitation**: Uses funding-only revenue with reconstructed signals. OI/premium/LST/lending yield not reflected. The backtest APY is a **conservative lower bound**.
 
@@ -191,7 +191,7 @@ All orders use maker limit orders (`postOnly`) for fee rebates:
 npm test
 ```
 
-Tests validate: cost calculator (maker model), leverage controller, funding scanner (whitelist/blacklist), imbalance detector (signal scoring, direction logic, market filtering), regime engine (deployment matrix, emergency triggers, Yogi vs Kuma advantage), and drift signal detector (severity levels, formatting).
+Tests validate: cost calculator (maker model), leverage controller, funding scanner (whitelist/blacklist), imbalance detector (signal scoring, direction logic, market filtering), regime engine (deployment matrix, emergency triggers, intelligence layer advantage), and drift signal detector (severity levels, formatting).
 
 ## Demo & Dashboard
 
@@ -245,7 +245,7 @@ Built for the [Ranger Build-A-Bear Hackathon](https://ranger.finance/build-a-bea
 - **Track**: Main + Drift Side Track
 - **Base asset**: USDC
 - **Target APY**: 20-30% (4 stacked yield sources + intelligent deployment)
-- **Edge**: Kuma's Drift-native arbitrage + Vigil-inspired anomaly detection = adaptive bear market vault
+- **Edge**: Drift-native arbitrage + Vigil-inspired anomaly detection = adaptive bear market vault
 - **Revenue**: Funding + premium convergence + OI rebalancing + LST staking + lending
 - **Lock period**: 3-month rolling
 

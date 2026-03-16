@@ -21,7 +21,7 @@ function assert(condition: boolean, msg: string) {
 
 console.log("=== Regime Engine Tests ===\n");
 
-// Test 1: Base case — no signals, Kuma-like behavior
+// Test 1: Base case — no signals, baseline behavior (no signals)
 console.log("Base case (no signals):");
 const veryLowClear = computeDriftRegime("veryLow", SIGNAL_NONE);
 assert(veryLowClear.deploymentPct === 100, `veryLow + NONE → 100% (got ${veryLowClear.deploymentPct}%)`);
@@ -51,17 +51,17 @@ assert(criticalSignal.deploymentPct === 25, `veryLow + CRITICAL → 25% (got ${c
 assert(criticalSignal.maxLeverage === 0.5, `veryLow + CRITICAL → 0.5x (got ${criticalSignal.maxLeverage}x)`);
 
 // Test 3: Yogi's key advantage — low vol + critical signal
-// Kuma would be fully deployed at 2x. Yogi pulls back to 25% at 0.5x.
+// A vol-only strategy would be fully deployed at 2x. Yogi pulls back to 25% at 0.5x.
 console.log("\nYogi advantage (low vol + critical signal):");
 const yogiAdvantage = computeDriftRegime("veryLow", SIGNAL_CRITICAL);
-const kumaEquivalent = computeDriftRegime("veryLow", SIGNAL_NONE);
+const baselineEquivalent = computeDriftRegime("veryLow", SIGNAL_NONE);
 assert(
-  yogiAdvantage.deploymentPct < kumaEquivalent.deploymentPct,
-  `Yogi deploys less with signals (${yogiAdvantage.deploymentPct}% vs Kuma's ${kumaEquivalent.deploymentPct}%)`
+  yogiAdvantage.deploymentPct < baselineEquivalent.deploymentPct,
+  `Yogi deploys less with signals (${yogiAdvantage.deploymentPct}% vs baseline ${baselineEquivalent.deploymentPct}%)`
 );
 assert(
-  yogiAdvantage.maxLeverage < kumaEquivalent.maxLeverage,
-  `Yogi uses less leverage with signals (${yogiAdvantage.maxLeverage}x vs Kuma's ${kumaEquivalent.maxLeverage}x)`
+  yogiAdvantage.maxLeverage < baselineEquivalent.maxLeverage,
+  `Yogi uses less leverage with signals (${yogiAdvantage.maxLeverage}x vs baseline ${baselineEquivalent.maxLeverage}x)`
 );
 
 // Test 4: Compounding effect — high vol + high signal

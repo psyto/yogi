@@ -119,18 +119,18 @@
   </p>
 </div>
 
-<!-- Slide 5: Kuma vs Yogi Comparison -->
+<!-- Slide 5: Yogi vs Traditional Vaults Comparison -->
 <div class="slide" id="slide-5">
-  <h2>Yogi vs Kuma: Same Alpha, Smarter Risk</h2>
+  <h2>Yogi vs Traditional Vaults: Same Alpha, Smarter Risk</h2>
   <table class="fade-item" style="margin-top: 20px; font-size: 22px;">
-    <tr><th>Scenario</th><th>Kuma</th><th>Yogi</th></tr>
+    <tr><th>Scenario</th><th>Vol-Only</th><th>Yogi</th></tr>
     <tr><td>Low vol, no stress</td><td>100% @ 2.0x</td><td>100% @ 2.0x <span class="dim">(same)</span></td></tr>
     <tr><td>Low vol, OI shifting</td><td class="red">100% @ 2.0x (blind)</td><td class="green">80% @ 1.5x (cautious)</td></tr>
     <tr><td>Low vol, liquidation cascade</td><td class="red">100% @ 2.0x (blind)</td><td class="green">25% @ 0.5x (defensive)</td></tr>
     <tr><td>High vol, critical signals</td><td class="red">50% @ 0.5x (blind)</td><td class="green">10% @ 0.0x (shut down)</td></tr>
   </table>
   <p style="margin-top: 30px; color: #888;">
-    Kuma sees vol. <span class="accent">Yogi sees vol AND danger signals.</span><br>
+    Traditional vaults see vol. <span class="accent">Yogi sees vol AND danger signals.</span><br>
     In calm markets: identical performance. In stress: Yogi protects capital.
   </p>
 </div>
@@ -140,10 +140,10 @@
   <h2>Backtest: 21% Lower Max Drawdown</h2>
   <h3>32 days (Feb 13 – Mar 16, 2026) — comparative</h3>
   <div class="stats-grid fade-item" style="margin-top: 20px;">
-    <div class="stat-card"><div class="stat-label">YOGI APY</div><div class="stat-value" style="color: #40c057;">5.89%</div><div class="stat-label">Kuma: 7.06%</div></div>
-    <div class="stat-card"><div class="stat-label">MAX DRAWDOWN</div><div class="stat-value" style="color: #40c057;">0.04%</div><div class="stat-label">Kuma: 0.05% (-21%)</div></div>
-    <div class="stat-card"><div class="stat-label">SHARPE</div><div class="stat-value">17.60</div><div class="stat-label">Kuma: 17.64</div></div>
-    <div class="stat-card"><div class="stat-label">COSTS</div><div class="stat-value">$312</div><div class="stat-label">Kuma: $371 (-16%)</div></div>
+    <div class="stat-card"><div class="stat-label">YOGI APY</div><div class="stat-value" style="color: #40c057;">5.89%</div><div class="stat-label">Baseline: 7.06%</div></div>
+    <div class="stat-card"><div class="stat-label">MAX DRAWDOWN</div><div class="stat-value" style="color: #40c057;">0.04%</div><div class="stat-label">Baseline: 0.05% (-21%)</div></div>
+    <div class="stat-card"><div class="stat-label">SHARPE</div><div class="stat-value">17.60</div><div class="stat-label">Baseline: 17.64</div></div>
+    <div class="stat-card"><div class="stat-label">COSTS</div><div class="stat-value">$312</div><div class="stat-label">Baseline: $371 (-16%)</div></div>
     <div class="stat-card"><div class="stat-label">UNIT TESTS</div><div class="stat-value">38</div><div class="stat-label">6 test suites</div></div>
     <div class="stat-card"><div class="stat-label">TARGET APY</div><div class="stat-value">20-30%</div><div class="stat-label">Normal conditions</div></div>
   </div>
@@ -166,7 +166,7 @@
         </div>
       </div>
       <div class="sig-card" style="text-align: left; border-color: #333; margin-top: 10px;">
-        <div style="color: #8b9dc3; font-size: 14px;">PROVEN BASE (FROM KUMA)</div>
+        <div style="color: #8b9dc3; font-size: 14px;">PROVEN BASE (DRIFT INTEGRATION)</div>
         <div style="font-size: 15px; margin-top: 8px; line-height: 1.8; color: #ccc;">
           &#9500; Imbalance Detector (OI + premium + funding)<br>
           &#9500; Leverage Controller (Parkinson vol)<br>
@@ -210,7 +210,7 @@
     <table style="width: 1000px; margin: 0 auto;">
       <tr><td class="dim">Target APY</td><td class="accent">20-30% (normal conditions)</td></tr>
       <tr><td class="dim">Base Asset</td><td>USDC</td></tr>
-      <tr><td class="dim">Edge</td><td>Kuma's Drift arbitrage + forward-looking signal detection</td></tr>
+      <tr><td class="dim">Edge</td><td>Drift arbitrage + forward-looking signal detection</td></tr>
       <tr><td class="dim">Revenue</td><td>Funding + premium convergence + OI + LST + lending</td></tr>
       <tr><td class="dim">Intelligence</td><td>4-dimension anomaly detector, 5x4 regime matrix</td></tr>
       <tr><td class="dim">Tests</td><td>38 unit tests (6 suites) + comparative backtest</td></tr>

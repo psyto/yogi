@@ -94,7 +94,7 @@ async function updateLeverage(): Promise<void> {
 
 /**
  * YOGI-SPECIFIC: Run signal detection and update regime.
- * This is the intelligence layer that makes Yogi smarter than Kuma.
+ * This is the intelligence layer that makes Yogi's risk management proactive.
  */
 async function runSignalDetection(): Promise<boolean> {
   console.log("\n--- Signal Detection ---");

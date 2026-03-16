@@ -7,7 +7,7 @@ import { STRATEGY_CONFIG } from "../config/vault";
  * Production-grade vaults don't rely on a single revenue source.
  * Gauntlet's SOL Basis earns: staking yield (7%) + funding rate (10-15%) = 17-22%
  *
- * Kuma v4 stacks:
+ * Yogi stacks:
  * 1. Lending floor (30% → 3-5% APY from Drift Earn or Kamino)
  * 2. Imbalance arbitrage (70% → funding + premium + OI convergence)
  * 3. LST staking yield (on collateral → 7-8% additional on deposited SOL)

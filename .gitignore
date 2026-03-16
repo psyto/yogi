@@ -2,3 +2,4 @@ node_modules/
 dist/
 .env
 *.json.bak
+.DS_Store

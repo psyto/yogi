@@ -5,7 +5,7 @@ import { STRATEGY_CONFIG } from "../config/vault";
  * Regime Engine — Yogi's decision matrix.
  *
  * Combines two independent inputs:
- * 1. Vol Regime (from Kuma's leverage controller) — backward-looking realized vol
+ * 1. Vol Regime (from the leverage controller) — backward-looking realized vol
  * 2. Signal Severity (from Drift signal detector) — forward-looking anomaly detection
  *
  * The combination produces a DriftRegime that determines:

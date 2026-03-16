@@ -39,12 +39,12 @@
 
 ---
 
-## Slide 5: Kuma vs Yogi (0:40 - 0:50)
+## Slide 5: Traditional Vaults vs Yogi (0:40 - 0:50)
 
-> In calm markets, Yogi performs identically to Kuma.
+> In calm markets, Yogi performs identically to traditional vaults.
 > But when OI starts shifting or liquidations cascade, Yogi pulls back —
 > from one hundred percent at two-x down to twenty-five percent at half-x.
-> Kuma stays fully deployed. Blind.
+> Traditional vaults stay fully deployed. Blind.
 > Same alpha source. Smarter risk management.
 
 ---
@@ -62,7 +62,7 @@
 ## Slide 7: Architecture (1:00 - 1:10)
 
 > Nine keeper modules. Two are new: the signal detector and regime engine.
-> Seven are battle-tested from Kuma — imbalance detector, cost gate, position manager.
+> Seven are battle-tested Drift integration modules — imbalance detector, cost gate, position manager.
 > All thresholds and matrices are configurable. No hardcoded magic numbers.
 > Thirty-eight unit tests across six suites. All passing.
 
@@ -70,7 +70,7 @@
 
 ## Slide 8: CTA (1:10 - 1:20)
 
-> Yogi Vault. Kuma's Drift arbitrage plus forward-looking signal detection.
+> Yogi Vault. Drift arbitrage plus forward-looking signal detection.
 > Five revenue sources. Four anomaly dimensions. One regime engine.
 > Built for the Ranger Build-A-Bear Hackathon. Main track plus Drift side track.
 > github dot com slash psyto slash yogi.

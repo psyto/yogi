@@ -8,8 +8,8 @@ import { SignalSeverity } from "../keeper/drift-signal-detector";
  * Yogi Vault — Comparative Backtest
  *
  * Runs the same historical data through TWO strategies:
- * 1. Kuma (baseline): static deployment, vol-only leverage
- * 2. Yogi (intelligence): regime-adaptive deployment based on vol + signals
+ * 1. Baseline (vol-only): static deployment, vol-only leverage
+ * 2. Yogi (intelligent): regime-adaptive deployment based on vol + signals
  *
  * The "signals" are reconstructed from historical data:
  * - OI shift: daily change in long/short imbalance
@@ -40,9 +40,9 @@ interface FundingRecord {
 
 interface DailyResult {
   date: string;
-  kumaEquity: number;
+  baselineEquity: number;
   yogiEquity: number;
-  kumaReturn: number;
+  baselineReturn: number;
   yogiReturn: number;
   signalSeverity: number;
   deploymentPct: number;
@@ -77,9 +77,9 @@ async function fetchFundingHistory(market: string): Promise<FundingRecord[]> {
 }
 
 async function main() {
-  console.log("Yogi Vault — Comparative Backtest (Kuma vs Yogi)\n");
-  console.log("Kuma: Static deployment, vol-only leverage");
-  console.log("Yogi: Regime-adaptive deployment (vol + reconstructed signals)\n");
+  console.log("Yogi Vault — Comparative Backtest (Baseline vs Yogi)\n");
+  console.log("Baseline (Vol-Only): Static deployment, vol-only leverage");
+  console.log("Yogi (Intelligent): Regime-adaptive deployment (vol + reconstructed signals)\n");
 
   const markets = STRATEGY_CONFIG.allowedMarkets.filter(
     (m) => !STRATEGY_CONFIG.excludeMarkets.includes(m)
@@ -119,24 +119,24 @@ async function main() {
   const sortedDates = [...allDates].sort();
 
   // --- Simulate both strategies ---
-  let kumaEquity = INITIAL_EQUITY;
+  let baselineEquity = INITIAL_EQUITY;
   let yogiEquity = INITIAL_EQUITY;
-  let kumaPeak = kumaEquity;
+  let baselinePeak = baselineEquity;
   let yogiPeak = yogiEquity;
-  let kumaMaxDD = 0;
+  let baselineMaxDD = 0;
   let yogiMaxDD = 0;
 
   const results: DailyResult[] = [];
-  const kumaReturns: number[] = [];
+  const baselineReturns: number[] = [];
   const yogiReturns: number[] = [];
 
   // Rolling state for signal reconstruction
   const prevDayImbalance = new Map<string, number>();
   const fundingRateHistory: number[] = [];
 
-  let kumaPositions = new Set<string>();
+  let baselinePositions = new Set<string>();
   let yogiPositions = new Set<string>();
-  let kumaCosts = 0;
+  let baselineCosts = 0;
   let yogiCosts = 0;
 
   for (const date of sortedDates) {
@@ -200,9 +200,9 @@ async function main() {
     const volBps = Math.max(fundingVol, 2000); // Floor at 20%
     const volRegime = classifyVolRegime(volBps);
 
-    // --- Kuma deployment: static vol-only leverage ---
-    const kumaLeverage = STRATEGY_CONFIG.leverageByVolRegime[volRegime] ?? 1.0;
-    const kumaDeployment = 100; // Kuma always deploys 100% of basis allocation
+    // --- Baseline (vol-only) deployment: static vol-only leverage ---
+    const baselineLeverage = STRATEGY_CONFIG.leverageByVolRegime[volRegime] ?? 1.0;
+    const baselineDeployment = 100; // Baseline (vol-only) always deploys 100% of basis allocation
 
     // --- Yogi deployment: regime-adaptive (uses same matrices as live keeper) ---
     const yogiRegime = computeDriftRegime(volRegime, signalSeverity);
@@ -220,32 +220,32 @@ async function main() {
 
     const newPositions = new Set(eligibleMarkets.map(([m]) => m));
 
-    // --- Kuma P&L ---
-    const kumaEntering = [...newPositions].filter((m) => !kumaPositions.has(m));
-    const kumaExiting = [...kumaPositions].filter((m) => !newPositions.has(m));
-    const kumaPerMarket = kumaEquity * BASIS_PCT * kumaLeverage / Math.max(newPositions.size, 1);
-    const kumaTradeCost = (kumaEntering.length + kumaExiting.length) * kumaPerMarket * ROUND_TRIP_COST;
-    kumaCosts += kumaTradeCost;
+    // --- Baseline (vol-only) P&L ---
+    const baselineEntering = [...newPositions].filter((m) => !baselinePositions.has(m));
+    const baselineExiting = [...baselinePositions].filter((m) => !newPositions.has(m));
+    const baselinePerMarket = baselineEquity * BASIS_PCT * baselineLeverage / Math.max(newPositions.size, 1);
+    const baselineTradeCost = (baselineEntering.length + baselineExiting.length) * baselinePerMarket * ROUND_TRIP_COST;
+    baselineCosts += baselineTradeCost;
 
-    const kumaLending = kumaEquity * LENDING_PCT * (LENDING_DAILY / 100);
-    let kumaBasis = 0;
+    const baselineLending = baselineEquity * LENDING_PCT * (LENDING_DAILY / 100);
+    let baselineBasis = 0;
     if (eligibleMarkets.length > 0) {
       const alloc = Math.min(
-        kumaEquity * BASIS_PCT * (kumaDeployment / 100) * kumaLeverage / eligibleMarkets.length,
-        kumaEquity * MAX_PER_MARKET
+        baselineEquity * BASIS_PCT * (baselineDeployment / 100) * baselineLeverage / eligibleMarkets.length,
+        baselineEquity * MAX_PER_MARKET
       );
       for (const [, dailyRate] of eligibleMarkets) {
-        kumaBasis += alloc * dailyRate;
+        baselineBasis += alloc * dailyRate;
       }
     }
-    const kumaNet = kumaLending + kumaBasis - kumaTradeCost;
-    const kumaReturnPct = kumaEquity > 0 ? (kumaNet / kumaEquity) * 100 : 0;
-    kumaEquity += kumaNet;
-    kumaReturns.push(kumaReturnPct);
-    if (kumaEquity > kumaPeak) kumaPeak = kumaEquity;
-    const kumaDD = (kumaPeak - kumaEquity) / kumaPeak;
-    if (kumaDD > kumaMaxDD) kumaMaxDD = kumaDD;
-    kumaPositions = newPositions;
+    const baselineNet = baselineLending + baselineBasis - baselineTradeCost;
+    const baselineReturnPct = baselineEquity > 0 ? (baselineNet / baselineEquity) * 100 : 0;
+    baselineEquity += baselineNet;
+    baselineReturns.push(baselineReturnPct);
+    if (baselineEquity > baselinePeak) baselinePeak = baselineEquity;
+    const baselineDD = (baselinePeak - baselineEquity) / baselinePeak;
+    if (baselineDD > baselineMaxDD) baselineMaxDD = baselineDD;
+    baselinePositions = newPositions;
 
     // --- Yogi P&L ---
     const yogiEntering = [...newPositions].filter((m) => !yogiPositions.has(m));
@@ -276,9 +276,9 @@ async function main() {
 
     results.push({
       date,
-      kumaEquity,
+      baselineEquity,
       yogiEquity,
-      kumaReturn: kumaReturnPct,
+      baselineReturn: baselineReturnPct,
       yogiReturn: yogiReturnPct,
       signalSeverity,
       deploymentPct: yogiDeployment,
@@ -288,16 +288,16 @@ async function main() {
 
   // --- Results ---
   const totalDays = results.length;
-  const kumaTotal = ((kumaEquity - INITIAL_EQUITY) / INITIAL_EQUITY) * 100;
+  const baselineTotal = ((baselineEquity - INITIAL_EQUITY) / INITIAL_EQUITY) * 100;
   const yogiTotal = ((yogiEquity - INITIAL_EQUITY) / INITIAL_EQUITY) * 100;
-  const kumaAPY = (kumaTotal / totalDays) * 365;
+  const baselineAPY = (baselineTotal / totalDays) * 365;
   const yogiAPY = (yogiTotal / totalDays) * 365;
 
-  const avgKuma = kumaReturns.reduce((a, b) => a + b, 0) / kumaReturns.length;
+  const avgBaseline = baselineReturns.reduce((a, b) => a + b, 0) / baselineReturns.length;
   const avgYogi = yogiReturns.reduce((a, b) => a + b, 0) / yogiReturns.length;
-  const stdKuma = Math.sqrt(kumaReturns.reduce((s, r) => s + (r - avgKuma) ** 2, 0) / kumaReturns.length);
+  const stdBaseline = Math.sqrt(baselineReturns.reduce((s, r) => s + (r - avgBaseline) ** 2, 0) / baselineReturns.length);
   const stdYogi = Math.sqrt(yogiReturns.reduce((s, r) => s + (r - avgYogi) ** 2, 0) / yogiReturns.length);
-  const sharpeKuma = stdKuma > 0 ? (avgKuma / stdKuma) * Math.sqrt(365) : 0;
+  const sharpeBaseline = stdBaseline > 0 ? (avgBaseline / stdBaseline) * Math.sqrt(365) : 0;
   const sharpeYogi = stdYogi > 0 ? (avgYogi / stdYogi) * Math.sqrt(365) : 0;
 
   // Signal distribution
@@ -305,19 +305,19 @@ async function main() {
   for (const r of results) signalDist[r.signalSeverity]++;
 
   console.log("\n════════════════════════════════════════════════════════");
-  console.log("         COMPARATIVE BACKTEST: KUMA vs YOGI");
+  console.log("      COMPARATIVE BACKTEST: BASELINE vs YOGI");
   console.log("════════════════════════════════════════════════════════\n");
   console.log(`Period:         ${totalDays} days (${results[0]?.date} to ${results[results.length - 1]?.date})`);
   console.log(`Initial equity: $${INITIAL_EQUITY.toLocaleString()}\n`);
 
-  console.log("                      KUMA          YOGI");
+  console.log("                   BASELINE        YOGI");
   console.log("                  ──────────    ──────────");
-  console.log(`  Final equity:   $${kumaEquity.toFixed(0).padStart(9)}    $${yogiEquity.toFixed(0).padStart(9)}`);
-  console.log(`  Total return:   ${kumaTotal.toFixed(2).padStart(8)}%    ${yogiTotal.toFixed(2).padStart(8)}%`);
-  console.log(`  Annualized:     ${kumaAPY.toFixed(2).padStart(8)}%    ${yogiAPY.toFixed(2).padStart(8)}%`);
-  console.log(`  Max drawdown:   ${(kumaMaxDD * 100).toFixed(2).padStart(8)}%    ${(yogiMaxDD * 100).toFixed(2).padStart(8)}%`);
-  console.log(`  Sharpe ratio:   ${sharpeKuma.toFixed(2).padStart(9)}    ${sharpeYogi.toFixed(2).padStart(9)}`);
-  console.log(`  Trading costs:  $${kumaCosts.toFixed(2).padStart(8)}    $${yogiCosts.toFixed(2).padStart(8)}`);
+  console.log(`  Final equity:   $${baselineEquity.toFixed(0).padStart(9)}    $${yogiEquity.toFixed(0).padStart(9)}`);
+  console.log(`  Total return:   ${baselineTotal.toFixed(2).padStart(8)}%    ${yogiTotal.toFixed(2).padStart(8)}%`);
+  console.log(`  Annualized:     ${baselineAPY.toFixed(2).padStart(8)}%    ${yogiAPY.toFixed(2).padStart(8)}%`);
+  console.log(`  Max drawdown:   ${(baselineMaxDD * 100).toFixed(2).padStart(8)}%    ${(yogiMaxDD * 100).toFixed(2).padStart(8)}%`);
+  console.log(`  Sharpe ratio:   ${sharpeBaseline.toFixed(2).padStart(9)}    ${sharpeYogi.toFixed(2).padStart(9)}`);
+  console.log(`  Trading costs:  $${baselineCosts.toFixed(2).padStart(8)}    $${yogiCosts.toFixed(2).padStart(8)}`);
 
   // Signal distribution
   console.log(`\nYogi signal distribution:`);
@@ -328,16 +328,16 @@ async function main() {
 
   // Equity curve comparison (every 5 days)
   console.log("\nEquity curve:");
-  console.log("  Date        | Kuma         | Yogi         | Signal  | Deployment");
+  console.log("  Date        | Baseline     | Yogi         | Signal  | Deployment");
   console.log("  ──────────────────────────────────────────────────────────────────");
   for (let i = 0; i < results.length; i++) {
     if (i % 5 === 0 || i === results.length - 1) {
       const r = results[i];
-      const kumaPct = ((r.kumaEquity - INITIAL_EQUITY) / INITIAL_EQUITY) * 100;
+      const baselinePct = ((r.baselineEquity - INITIAL_EQUITY) / INITIAL_EQUITY) * 100;
       const yogiPct = ((r.yogiEquity - INITIAL_EQUITY) / INITIAL_EQUITY) * 100;
       const signalLabel = ["CLEAR", "LOW", "HIGH", "CRIT"][r.signalSeverity];
       console.log(
-        `  ${r.date} | $${r.kumaEquity.toFixed(0).padStart(9)} (${kumaPct >= 0 ? "+" : ""}${kumaPct.toFixed(1).padStart(5)}%) | ` +
+        `  ${r.date} | $${r.baselineEquity.toFixed(0).padStart(9)} (${baselinePct >= 0 ? "+" : ""}${baselinePct.toFixed(1).padStart(5)}%) | ` +
         `$${r.yogiEquity.toFixed(0).padStart(9)} (${yogiPct >= 0 ? "+" : ""}${yogiPct.toFixed(1).padStart(5)}%) | ` +
         `${signalLabel.padStart(5)} | ${r.deploymentPct}%`
       );
@@ -346,19 +346,19 @@ async function main() {
 
   // Verdict
   console.log("\n════════════════════════════════════════════════════════");
-  console.log(`Kuma APY:    ${kumaAPY.toFixed(2)}% | Sharpe: ${sharpeKuma.toFixed(2)} | Max DD: ${(kumaMaxDD * 100).toFixed(2)}%`);
+  console.log(`Baseline APY: ${baselineAPY.toFixed(2)}% | Sharpe: ${sharpeBaseline.toFixed(2)} | Max DD: ${(baselineMaxDD * 100).toFixed(2)}%`);
   console.log(`Yogi APY:    ${yogiAPY.toFixed(2)}% | Sharpe: ${sharpeYogi.toFixed(2)} | Max DD: ${(yogiMaxDD * 100).toFixed(2)}%`);
   console.log("");
 
-  if (yogiMaxDD < kumaMaxDD && yogiAPY > 0) {
-    const ddImprovement = ((kumaMaxDD - yogiMaxDD) / kumaMaxDD * 100).toFixed(0);
+  if (yogiMaxDD < baselineMaxDD && yogiAPY > 0) {
+    const ddImprovement = ((baselineMaxDD - yogiMaxDD) / baselineMaxDD * 100).toFixed(0);
     console.log(`Yogi advantage: ${ddImprovement}% lower max drawdown`);
   }
-  if (sharpeYogi > sharpeKuma) {
-    console.log(`Yogi advantage: Better risk-adjusted returns (Sharpe ${sharpeYogi.toFixed(2)} vs ${sharpeKuma.toFixed(2)})`);
+  if (sharpeYogi > sharpeBaseline) {
+    console.log(`Yogi advantage: Better risk-adjusted returns (Sharpe ${sharpeYogi.toFixed(2)} vs ${sharpeBaseline.toFixed(2)})`);
   }
-  if (yogiAPY < kumaAPY) {
-    console.log(`Trade-off: Yogi sacrifices ${(kumaAPY - yogiAPY).toFixed(2)}% APY for better risk management`);
+  if (yogiAPY < baselineAPY) {
+    console.log(`Trade-off: Yogi sacrifices ${(baselineAPY - yogiAPY).toFixed(2)}% APY for better risk management`);
   }
 
   const meetsTarget = yogiAPY >= 10;
