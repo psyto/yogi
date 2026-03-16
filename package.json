@@ -1,0 +1,33 @@
+{
+  "name": "yogi",
+  "version": "0.1.0",
+  "description": "Yogi Vault — Smarter than the average bear market vault. Drift basis trade + intelligent signal detection.",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "keeper": "node --loader ts-node/esm src/keeper/index.ts",
+    "keeper:dev": "node --watch --loader ts-node/esm src/keeper/index.ts",
+    "test:devnet": "node --loader ts-node/esm src/scripts/test-devnet.ts",
+    "admin:init-vault": "node --loader ts-node/esm src/scripts/admin-init-vault.ts",
+    "admin:add-adaptor": "node --loader ts-node/esm src/scripts/admin-add-adaptor.ts",
+    "manager:init-strategy": "node --loader ts-node/esm src/scripts/manager-init-strategy.ts",
+    "backtest": "npm run build && node dist/scripts/backtest.js",
+    "test": "npm run build && node dist/tests/cost-calculator.test.js && node dist/tests/leverage-controller.test.js && node dist/tests/funding-scanner.test.js && node dist/tests/imbalance-detector.test.js && node dist/tests/regime-engine.test.js && node dist/tests/drift-signal-detector.test.js"
+  },
+  "dependencies": {
+    "@coral-xyz/anchor": "^0.30.1",
+    "@drift-labs/sdk": "2.120.0-beta.1",
+    "@solana/spl-token": "^0.4.9",
+    "@solana/web3.js": "^1.98.0",
+    "@voltr/vault-sdk": "^1.0.20",
+    "bn.js": "^5.2.1",
+    "bs58": "^6.0.0",
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "@types/bn.js": "^5.1.6",
+    "@types/node": "^22.10.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.0"
+  }
+}
