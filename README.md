@@ -193,6 +193,19 @@ npm test
 
 Tests validate: cost calculator (maker model), leverage controller, funding scanner (whitelist/blacklist), imbalance detector (signal scoring, direction logic, market filtering), regime engine (deployment matrix, emergency triggers, Yogi vs Kuma advantage), and drift signal detector (severity levels, formatting).
 
+## Demo & Dashboard
+
+- **Pitch presentation**: `demo/presentation.html` — 8-slide auto-advancing pitch (80 seconds)
+- **Live dashboard**: `demo/dashboard.html` — real Drift data + signal detection, no server needed
+- **Demo video**: `demo/yogi-demo.mp4` — generated from presentation slides
+- **Voiceover script**: `demo/voiceover-script.md` — narration for each slide
+
+```bash
+open demo/presentation.html    # View pitch deck
+open demo/dashboard.html       # Live monitoring dashboard
+node demo/record.js            # Generate demo video (requires puppeteer + ffmpeg)
+```
+
 ## Setup
 
 ```bash

@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1920, height=1080">
+<title>Yogi Vault — Pitch</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: 1920px; height: 1080px; overflow: hidden; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; background: #0a0a0f; color: #e0e0e0; }
+  .slide { position: absolute; top: 0; left: 0; width: 1920px; height: 1080px; display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.8s ease; padding: 80px; }
+  .slide.active { opacity: 1; }
+  h1 { font-size: 72px; margin-bottom: 20px; }
+  h2 { font-size: 48px; margin-bottom: 30px; color: #8b9dc3; }
+  h3 { font-size: 36px; margin-bottom: 20px; color: #6b7b9c; }
+  p { font-size: 28px; line-height: 1.6; max-width: 1400px; text-align: center; }
+  .accent { color: #f0b040; } .green { color: #40c057; } .red { color: #e03131; } .dim { color: #666; } .blue { color: #5fb3d4; }
+  .emoji { font-size: 120px; margin-bottom: 30px; }
+  .title-slide h1 { font-size: 96px; }
+  .title-slide .subtitle { font-size: 32px; color: #8b9dc3; margin-top: 10px; }
+  .title-slide .tagline { font-size: 40px; color: #f0b040; margin-top: 30px; }
+  .terminal { background: #111118; border: 1px solid #333; border-radius: 12px; padding: 30px 40px; width: 1400px; text-align: left; font-size: 22px; line-height: 1.7; }
+  .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; width: 1400px; }
+  .stat-card { background: #111118; border: 1px solid #333; border-radius: 12px; padding: 30px; text-align: center; }
+  .stat-value { font-size: 48px; color: #f0b040; margin: 10px 0; }
+  .stat-label { font-size: 20px; color: #888; }
+  table { width: 1200px; border-collapse: collapse; font-size: 24px; }
+  th { color: #f0b040; padding: 12px 20px; text-align: left; border-bottom: 2px solid #333; }
+  td { padding: 12px 20px; border-bottom: 1px solid #222; }
+  .progress { position: fixed; bottom: 0; left: 0; height: 4px; background: #f0b040; transition: width 0.5s ease; z-index: 100; }
+  .slide-number { position: fixed; bottom: 20px; right: 40px; font-size: 18px; color: #444; z-index: 100; }
+  .fade-item { opacity: 0; transform: translateY(20px); transition: all 0.5s ease; }
+  .fade-item.visible { opacity: 1; transform: translateY(0); }
+  .signal-box { display: flex; gap: 20px; width: 1400px; margin-top: 30px; }
+  .sig-card { flex: 1; border-radius: 12px; padding: 24px; text-align: center; background: #111118; border: 1px solid #333; }
+</style>
+</head>
+<body>
+
+<!-- Slide 1: Title -->
+<div class="slide title-slide" id="slide-1">
+  <h1>Yogi Vault</h1>
+  <div class="subtitle">Drift Basis Trade + Intelligent Signal Detection</div>
+  <div class="tagline">"Smarter than the average bear market vault."</div>
+  <p style="margin-top: 40px; color: #666;">Ranger Build-A-Bear Hackathon | Main Track + Drift Side Track</p>
+</div>
+
+<!-- Slide 2: The Problem -->
+<div class="slide" id="slide-2">
+  <h2>The Problem with Basis Trade Vaults</h2>
+  <div class="signal-box fade-item">
+    <div class="sig-card" style="border-color: #e03131;">
+      <div style="font-size: 36px; margin-bottom: 10px;">&#x1F441;</div>
+      <div style="color: #e03131; font-size: 22px; font-weight: bold;">Reactive Risk</div>
+      <div style="font-size: 16px; color: #ccc; margin-top: 10px;">Vol-based leverage only<br>reacts AFTER damage is done</div>
+    </div>
+    <div class="sig-card" style="border-color: #e03131;">
+      <div style="font-size: 36px; margin-bottom: 10px;">&#x26A0;</div>
+      <div style="color: #e03131; font-size: 22px; font-weight: bold;">Blind to Contagion</div>
+      <div style="font-size: 16px; color: #ccc; margin-top: 10px;">Can't detect liquidation<br>cascades or OI shifts</div>
+    </div>
+    <div class="sig-card" style="border-color: #e03131;">
+      <div style="font-size: 36px; margin-bottom: 10px;">&#x1F4C9;</div>
+      <div style="color: #e03131; font-size: 22px; font-weight: bold;">Bear Market Blind Spot</div>
+      <div style="font-size: 16px; color: #ccc; margin-top: 10px;">Low vol + building stress<br>= full exposure at worst time</div>
+    </div>
+  </div>
+  <p style="margin-top: 30px; color: #888;">
+    Most vaults scale leverage by volatility alone.<br>
+    <span class="accent">In a calm market with building contagion, they stay fully deployed at 2x.</span>
+  </p>
+</div>
+
+<!-- Slide 3: Yogi's Solution — Intelligence Layer -->
+<div class="slide" id="slide-3">
+  <h2>Yogi's Intelligence Layer</h2>
+  <p style="margin-bottom: 30px; color: #ccc;">Four anomaly dimensions monitored every 5 minutes:</p>
+  <div class="signal-box fade-item">
+    <div class="sig-card" style="border-color: #f0b040;">
+      <div style="font-size: 36px; margin-bottom: 10px;">&#x2696;</div>
+      <div style="color: #f0b040; font-size: 20px; font-weight: bold;">OI Shift</div>
+      <div style="font-size: 14px; color: #ccc; margin-top: 10px;">Mass repositioning<br>precedes squeezes</div>
+    </div>
+    <div class="sig-card" style="border-color: #e03131;">
+      <div style="font-size: 36px; margin-bottom: 10px;">&#x1F4A5;</div>
+      <div style="color: #e03131; font-size: 20px; font-weight: bold;">Liquidation Cascade</div>
+      <div style="font-size: 14px; color: #ccc; margin-top: 10px;">OI drop = forced<br>margin calls</div>
+    </div>
+    <div class="sig-card" style="border-color: #5fb3d4;">
+      <div style="font-size: 36px; margin-bottom: 10px;">&#x1F30A;</div>
+      <div style="color: #5fb3d4; font-size: 20px; font-weight: bold;">Funding Volatility</div>
+      <div style="font-size: 14px; color: #ccc; margin-top: 10px;">Unstable rates =<br>regime transition</div>
+    </div>
+    <div class="sig-card" style="border-color: #40c057;">
+      <div style="font-size: 36px; margin-bottom: 10px;">&#x1F4CA;</div>
+      <div style="color: #40c057; font-size: 20px; font-weight: bold;">Spread Blow-out</div>
+      <div style="font-size: 14px; color: #ccc; margin-top: 10px;">Mark/oracle divergence<br>= thin liquidity</div>
+    </div>
+  </div>
+  <p style="margin-top: 30px; color: #888;">
+    Max severity across dimensions becomes the aggregate signal.<br>
+    <span class="accent">Vol regime x signal severity = deployment % and leverage cap.</span>
+  </p>
+</div>
+
+<!-- Slide 4: Regime Engine Matrix -->
+<div class="slide" id="slide-4">
+  <h2>Regime Engine: Adaptive Deployment</h2>
+  <table class="fade-item" style="margin-top: 20px; font-size: 22px;">
+    <tr><th></th><th>CLEAR</th><th>LOW</th><th>HIGH</th><th style="color: #e03131;">CRITICAL</th></tr>
+    <tr><td class="green">Very Low Vol</td><td>100% @ 2.0x</td><td>80% @ 1.5x</td><td>50% @ 1.0x</td><td class="red">25% @ 0.5x</td></tr>
+    <tr><td class="green">Low Vol</td><td>85% @ 1.5x</td><td>70% @ 1.2x</td><td>40% @ 0.8x</td><td class="red">20% @ 0.3x</td></tr>
+    <tr><td class="accent">Normal Vol</td><td>70% @ 1.0x</td><td>55% @ 0.8x</td><td>30% @ 0.5x</td><td class="red">15% @ 0.2x</td></tr>
+    <tr><td class="red">High Vol</td><td>50% @ 0.5x</td><td>35% @ 0.3x</td><td>20% @ 0.2x</td><td class="red">10% @ 0.0x</td></tr>
+    <tr><td class="red">Extreme Vol</td><td colspan="4" style="text-align: center; color: #e03131;">0% @ 0.0x — lending only</td></tr>
+  </table>
+  <p style="margin-top: 20px; color: #888;">
+    Signals can only <span class="accent">reduce</span> deployment, never increase it.<br>
+    Emergency rebalance triggers on 30%+ deployment drops.
+  </p>
+</div>
+
+<!-- Slide 5: Kuma vs Yogi Comparison -->
+<div class="slide" id="slide-5">
+  <h2>Yogi vs Kuma: Same Alpha, Smarter Risk</h2>
+  <table class="fade-item" style="margin-top: 20px; font-size: 22px;">
+    <tr><th>Scenario</th><th>Kuma</th><th>Yogi</th></tr>
+    <tr><td>Low vol, no stress</td><td>100% @ 2.0x</td><td>100% @ 2.0x <span class="dim">(same)</span></td></tr>
+    <tr><td>Low vol, OI shifting</td><td class="red">100% @ 2.0x (blind)</td><td class="green">80% @ 1.5x (cautious)</td></tr>
+    <tr><td>Low vol, liquidation cascade</td><td class="red">100% @ 2.0x (blind)</td><td class="green">25% @ 0.5x (defensive)</td></tr>
+    <tr><td>High vol, critical signals</td><td class="red">50% @ 0.5x (blind)</td><td class="green">10% @ 0.0x (shut down)</td></tr>
+  </table>
+  <p style="margin-top: 30px; color: #888;">
+    Kuma sees vol. <span class="accent">Yogi sees vol AND danger signals.</span><br>
+    In calm markets: identical performance. In stress: Yogi protects capital.
+  </p>
+</div>
+
+<!-- Slide 6: Backtest Results -->
+<div class="slide" id="slide-6">
+  <h2>Backtest: 21% Lower Max Drawdown</h2>
+  <h3>32 days (Feb 13 – Mar 16, 2026) — comparative</h3>
+  <div class="stats-grid fade-item" style="margin-top: 20px;">
+    <div class="stat-card"><div class="stat-label">YOGI APY</div><div class="stat-value" style="color: #40c057;">5.89%</div><div class="stat-label">Kuma: 7.06%</div></div>
+    <div class="stat-card"><div class="stat-label">MAX DRAWDOWN</div><div class="stat-value" style="color: #40c057;">0.04%</div><div class="stat-label">Kuma: 0.05% (-21%)</div></div>
+    <div class="stat-card"><div class="stat-label">SHARPE</div><div class="stat-value">17.60</div><div class="stat-label">Kuma: 17.64</div></div>
+    <div class="stat-card"><div class="stat-label">COSTS</div><div class="stat-value">$312</div><div class="stat-label">Kuma: $371 (-16%)</div></div>
+    <div class="stat-card"><div class="stat-label">UNIT TESTS</div><div class="stat-value">38</div><div class="stat-label">6 test suites</div></div>
+    <div class="stat-card"><div class="stat-label">TARGET APY</div><div class="stat-value">20-30%</div><div class="stat-label">Normal conditions</div></div>
+  </div>
+  <p style="margin-top: 20px; color: #888;">
+    Calm period — no HIGH/CRITICAL signals fired. Yogi's real edge shows in stress.<br>
+    <span class="accent">Trade-off: 1.2% APY for 21% lower drawdown. In a crash, this flips.</span>
+  </p>
+</div>
+
+<!-- Slide 7: Architecture -->
+<div class="slide" id="slide-7">
+  <h2>Architecture: 9 Keeper Modules</h2>
+  <div style="display: flex; gap: 20px; margin-top: 20px; width: 1400px;">
+    <div class="fade-item" style="flex: 1;">
+      <div class="sig-card" style="text-align: left; border-color: #f0b040;">
+        <div style="color: #f0b040; font-size: 14px;">YOGI INTELLIGENCE (NEW)</div>
+        <div style="font-size: 15px; margin-top: 8px; line-height: 1.8; color: #ccc;">
+          &#9656; Signal Detector (4 anomaly dimensions)<br>
+          &#9656; Regime Engine (5x4 deployment matrix)
+        </div>
+      </div>
+      <div class="sig-card" style="text-align: left; border-color: #333; margin-top: 10px;">
+        <div style="color: #8b9dc3; font-size: 14px;">PROVEN BASE (FROM KUMA)</div>
+        <div style="font-size: 15px; margin-top: 8px; line-height: 1.8; color: #ccc;">
+          &#9500; Imbalance Detector (OI + premium + funding)<br>
+          &#9500; Leverage Controller (Parkinson vol)<br>
+          &#9500; Cost Gate (maker rebates, 1.6 bps RT)<br>
+          &#9500; Position Manager (bidirectional)<br>
+          &#9500; Health Monitor (30s)<br>
+          &#9500; Funding Scanner<br>
+          &#9492; Yield Stacker
+        </div>
+      </div>
+    </div>
+    <div class="fade-item" style="flex: 1;">
+      <div class="sig-card" style="text-align: left; border-color: #333;">
+        <div style="color: #40c057; font-size: 14px;">RISK CONTROLS</div>
+        <div style="font-size: 15px; margin-top: 8px; line-height: 1.8; color: #ccc;">
+          &#x2022; Signal scan: every 5 minutes<br>
+          &#x2022; Health check: every 30 seconds<br>
+          &#x2022; Emergency rebalance on regime shift<br>
+          &#x2022; CRITICAL signal: force reduce<br>
+          &#x2022; Cautious mode: 40% min signal<br>
+          &#x2022; Drawdown: 3% reduce / 5% close<br>
+          &#x2022; Negative equity: emergency close
+        </div>
+      </div>
+      <div class="sig-card" style="text-align: left; border-color: #333; margin-top: 10px;">
+        <div style="color: #5fb3d4; font-size: 14px;">CONFIGURABLE</div>
+        <div style="font-size: 15px; margin-top: 8px; color: #ccc;">
+          All thresholds, matrices, and<br>
+          weights in STRATEGY_CONFIG.<br>
+          No hardcoded magic numbers.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 8: CTA -->
+<div class="slide title-slide" id="slide-8">
+  <h1>Yogi Vault</h1>
+  <div style="margin-top: 30px;">
+    <table style="width: 1000px; margin: 0 auto;">
+      <tr><td class="dim">Target APY</td><td class="accent">20-30% (normal conditions)</td></tr>
+      <tr><td class="dim">Base Asset</td><td>USDC</td></tr>
+      <tr><td class="dim">Edge</td><td>Kuma's Drift arbitrage + forward-looking signal detection</td></tr>
+      <tr><td class="dim">Revenue</td><td>Funding + premium convergence + OI + LST + lending</td></tr>
+      <tr><td class="dim">Intelligence</td><td>4-dimension anomaly detector, 5x4 regime matrix</td></tr>
+      <tr><td class="dim">Tests</td><td>38 unit tests (6 suites) + comparative backtest</td></tr>
+      <tr><td class="dim">Bear market</td><td>Proactive risk reduction via signal detection</td></tr>
+    </table>
+  </div>
+  <p style="margin-top: 40px;"><span class="accent">github.com/psyto/yogi</span></p>
+  <p style="margin-top: 10px; color: #666;">Main Track + Drift Side Track</p>
+</div>
+
+<div class="progress" id="progress"></div>
+<div class="slide-number" id="slide-number"></div>
+<script>
+const T=8,D=10000,F=500;let c=0;
+function show(n){document.querySelectorAll('.slide').forEach(s=>s.classList.remove('active'));const s=document.getElementById(`slide-${n+1}`);if(s){s.classList.add('active');s.querySelectorAll('.fade-item').forEach((e,i)=>setTimeout(()=>e.classList.add('visible'),F*(i+1)));}document.getElementById('progress').style.width=`${((n+1)/T)*100}%`;document.getElementById('slide-number').textContent=`${n+1} / ${T}`;}
+function next(){c++;if(c>=T)return;show(c);if(c<T-1)setTimeout(next,D);}
+show(0);setTimeout(next,D);
+</script>
+</body>
+</html>

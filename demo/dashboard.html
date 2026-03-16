@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yogi Vault — Live Dashboard</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    background: #0a0a0f; color: #e0e0e0;
+    padding: 24px; min-height: 100vh;
+  }
+  .header {
+    display: flex; align-items: center; gap: 16px;
+    margin-bottom: 24px; border-bottom: 1px solid #222; padding-bottom: 16px;
+  }
+  .header h1 { font-size: 28px; }
+  .header .status { font-size: 14px; color: #40c057; }
+  .header .status.error { color: #e03131; }
+  .header .last-update { font-size: 12px; color: #666; margin-left: auto; }
+  .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 24px; }
+  .card {
+    background: #111118; border: 1px solid #222; border-radius: 8px; padding: 20px;
+  }
+  .card-label { font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+  .card-value { font-size: 32px; margin-top: 8px; }
+  .card-sub { font-size: 12px; color: #888; margin-top: 4px; }
+  .positive { color: #40c057; }
+  .negative { color: #e03131; }
+  .accent { color: #f0b040; }
+  .blue { color: #5fb3d4; }
+  .section { margin-bottom: 24px; }
+  .section h2 { font-size: 18px; color: #888; margin-bottom: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; color: #666; padding: 8px 12px; border-bottom: 2px solid #222; font-size: 12px; text-transform: uppercase; }
+  td { padding: 8px 12px; border-bottom: 1px solid #1a1a1a; }
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px;
+    background: #1a2a1a; color: #40c057;
+  }
+  .badge.blocked { background: #2a1a1a; color: #e03131; }
+  .badge.warning { background: #2a2a1a; color: #f0b040; }
+  .badge.critical { background: #3a1a1a; color: #ff4444; font-weight: bold; }
+  .log-container {
+    background: #111118; border: 1px solid #222; border-radius: 8px; padding: 16px;
+    max-height: 200px; overflow-y: auto; font-size: 13px; line-height: 1.6;
+  }
+  .log-entry { border-bottom: 1px solid #1a1a1a; padding: 4px 0; }
+  .log-time { color: #444; }
+  .two-col { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 24px; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+  .signal-indicator { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; }
+  .signal-clear { background: #40c057; }
+  .signal-low { background: #f0b040; }
+  .signal-high { background: #e06030; }
+  .signal-critical { background: #e03131; animation: pulse 1s infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>Yogi Vault</h1>
+  <span class="status" id="status">Connecting...</span>
+  <span class="last-update" id="lastUpdate">-</span>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <div class="card-label">Total Equity</div>
+    <div class="card-value accent" id="equity">$-</div>
+    <div class="card-sub" id="equityChange">-</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Vol Regime</div>
+    <div class="card-value" id="regime">-</div>
+    <div class="card-sub" id="leverage">Leverage: -</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Signal Severity</div>
+    <div class="card-value" id="signal">-</div>
+    <div class="card-sub" id="signalDetail">-</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Deployment</div>
+    <div class="card-value accent" id="deployment">-</div>
+    <div class="card-sub" id="deployMode">Mode: -</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Health Ratio</div>
+    <div class="card-value positive" id="health">-</div>
+    <div class="card-sub" id="healthStatus">-</div>
+  </div>
+</div>
+
+<div class="two-col">
+  <div class="section">
+    <h2>Funding Rate Scanner</h2>
+    <table>
+      <thead><tr><th>Market</th><th>24h Rate</th><th>APY</th><th>Cost Gate</th><th>Status</th></tr></thead>
+      <tbody id="fundingTable"></tbody>
+    </table>
+  </div>
+  <div>
+    <div class="section">
+      <h2>Signal Detection</h2>
+      <table>
+        <thead><tr><th>Dimension</th><th>Value</th><th>Severity</th></tr></thead>
+        <tbody id="signalTable">
+          <tr><td>OI Shift</td><td id="oiShiftVal">-</td><td id="oiShiftSev">-</td></tr>
+          <tr><td>Liquidation</td><td id="liqVal">-</td><td id="liqSev">-</td></tr>
+          <tr><td>Funding Vol</td><td id="fundVolVal">-</td><td id="fundVolSev">-</td></tr>
+          <tr><td>Spread</td><td id="spreadVal">-</td><td id="spreadSev">-</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="section">
+      <h2>Regime Matrix</h2>
+      <table>
+        <thead><tr><th>Regime</th><th>Vol</th><th>Leverage</th></tr></thead>
+        <tbody>
+          <tr><td>Very Low</td><td>&lt;20%</td><td>2.0x</td></tr>
+          <tr><td>Low</td><td>20-35%</td><td>1.5x</td></tr>
+          <tr><td>Normal</td><td>35-50%</td><td>1.0x</td></tr>
+          <tr><td style="color: #f0b040;">High</td><td>50-75%</td><td>0.5x</td></tr>
+          <tr><td style="color: #e03131;">Extreme</td><td>&gt;75%</td><td>0x</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>Keeper Log</h2>
+  <div class="log-container" id="logContainer"></div>
+</div>
+
+<script>
+const DRIFT_API = 'https://data.api.drift.trade';
+const MONITORED = ['SOL-PERP', 'BTC-PERP', 'ETH-PERP'];
+const THRESHOLDS = {
+  oiShift: { low: 5, high: 15, critical: 30 },
+  spread: { low: 0.5, high: 1.5, critical: 3.0 },
+  fundingVol: { low: 500, high: 1500, critical: 3000 }
+};
+const DEPLOYMENT = {
+  veryLow: [100, 80, 50, 25],
+  low: [85, 70, 40, 20],
+  normal: [70, 55, 30, 15],
+  high: [50, 35, 20, 10],
+  extreme: [0, 0, 0, 0]
+};
+const LEVERAGE_MAP = {
+  veryLow: [2.0, 1.5, 1.0, 0.5],
+  low: [1.5, 1.2, 0.8, 0.3],
+  normal: [1.0, 0.8, 0.5, 0.2],
+  high: [0.5, 0.3, 0.2, 0.0],
+  extreme: [0, 0, 0, 0]
+};
+
+function classifySeverity(val, th) {
+  if (val >= th.critical) return 3;
+  if (val >= th.high) return 2;
+  if (val >= th.low) return 1;
+  return 0;
+}
+function severityLabel(s) { return ['CLEAR','LOW','HIGH','CRITICAL'][s]; }
+function severityBadge(s) {
+  const cls = ['', 'warning', 'warning', 'critical'][s];
+  return `<span class="badge ${cls}">${severityLabel(s)}</span>`;
+}
+function classifyRegime(vol) {
+  if (vol < 0.20) return 'veryLow';
+  if (vol < 0.35) return 'low';
+  if (vol < 0.50) return 'normal';
+  if (vol < 0.75) return 'high';
+  return 'extreme';
+}
+function addLog(msg, type='info') {
+  const c = document.getElementById('logContainer');
+  const t = new Date().toLocaleTimeString();
+  const color = type==='error'?'#e03131':type==='warn'?'#f0b040':'#888';
+  c.innerHTML = `<div class="log-entry"><span class="log-time">${t}</span> <span style="color:${color}">${msg}</span></div>` + c.innerHTML;
+  if (c.children.length > 50) c.lastChild.remove();
+}
+
+let prevSnapshots = null;
+let fundingHistory = [];
+
+async function update() {
+  try {
+    // Funding rates
+    const fRes = await fetch(`${DRIFT_API}/stats/fundingRates`);
+    const fBody = await fRes.json();
+    const markets = fBody.markets || [];
+    const topMarkets = markets.map(m => ({
+      symbol: m.symbol, rate24h: parseFloat(m.fundingRates['24h']),
+      apy: parseFloat(m.fundingRates['24h']) * 24 * 365 * 100
+    })).sort((a,b) => b.rate24h - a.rate24h).slice(0, 8);
+
+    document.getElementById('fundingTable').innerHTML = topMarkets.map(m => {
+      const pass = Math.abs(m.apy) > 0.83;
+      return `<tr><td>${m.symbol}</td><td class="${m.rate24h>=0?'positive':'negative'}">${(m.rate24h*100).toFixed(4)}%</td><td class="${m.apy>=0?'positive':'negative'}">${m.apy.toFixed(1)}%</td><td><span class="badge ${pass?'':'blocked'}">${pass?'PASS':'FAIL'}</span></td><td>${m.rate24h>0?'<span class="badge">ELIGIBLE</span>':'<span class="badge blocked">BLOCKED</span>'}</td></tr>`;
+    }).join('');
+
+    // Volatility
+    const vRes = await fetch(`${DRIFT_API}/market/SOL-PERP/candles/60?limit=168`);
+    const vBody = await vRes.json();
+    let sum=0, cnt=0;
+    for (const c of (vBody.records||[])) {
+      if (c.oracleHigh>0 && c.oracleLow>0 && c.oracleHigh>=c.oracleLow) {
+        const l = Math.log(c.oracleHigh/c.oracleLow); sum+=l*l; cnt++;
+      }
+    }
+    const vol = cnt>0 ? Math.sqrt(sum/(4*Math.LN2*cnt)*365.25*24) : 0;
+    const regime = classifyRegime(vol);
+
+    // Signal detection (simplified from live data)
+    const mRes = await fetch(`${DRIFT_API}/stats/markets`);
+    const mBody = await mRes.json();
+    const perps = (mBody.markets||[]).filter(m => m.marketType==='perp' && MONITORED.includes(m.symbol));
+
+    let maxSpread=0;
+    for (const m of perps) {
+      const oracle = parseFloat(m.oraclePrice), mark = parseFloat(m.markPrice);
+      if (oracle>0) maxSpread = Math.max(maxSpread, Math.abs((mark-oracle)/oracle)*100);
+    }
+
+    const avgFunding = topMarkets.filter(m=>MONITORED.includes(m.symbol)).reduce((s,m)=>s+m.rate24h,0) / Math.max(MONITORED.length,1);
+    fundingHistory.push(avgFunding);
+    if (fundingHistory.length>7) fundingHistory.shift();
+    let fundingVol = 0;
+    if (fundingHistory.length>=3) {
+      const mean = fundingHistory.reduce((s,r)=>s+r,0)/fundingHistory.length;
+      const variance = fundingHistory.reduce((s,r)=>s+(r-mean)**2,0)/fundingHistory.length;
+      fundingVol = Math.sqrt(variance)*Math.sqrt(3*365)*10000;
+    }
+
+    const spreadSev = classifySeverity(maxSpread, THRESHOLDS.spread);
+    const fundVolSev = classifySeverity(fundingVol, THRESHOLDS.fundingVol);
+    const aggSeverity = Math.max(spreadSev, fundVolSev);
+
+    // Update signal table
+    document.getElementById('spreadVal').textContent = maxSpread.toFixed(3) + '%';
+    document.getElementById('spreadSev').innerHTML = severityBadge(spreadSev);
+    document.getElementById('fundVolVal').textContent = fundingVol.toFixed(0) + ' bps';
+    document.getElementById('fundVolSev').innerHTML = severityBadge(fundVolSev);
+    document.getElementById('oiShiftVal').textContent = 'N/A (needs history)';
+    document.getElementById('oiShiftSev').innerHTML = severityBadge(0);
+    document.getElementById('liqVal').textContent = 'N/A (needs history)';
+    document.getElementById('liqSev').innerHTML = severityBadge(0);
+
+    // Regime + deployment
+    const deploy = DEPLOYMENT[regime][aggSeverity];
+    const lev = LEVERAGE_MAP[regime][aggSeverity];
+    let mode = deploy>=85?'aggressive':deploy>=55?'normal':deploy>=20?'cautious':'defensive';
+
+    document.getElementById('regime').textContent = regime;
+    document.getElementById('regime').className = `card-value ${regime==='extreme'?'negative':regime==='high'?'accent':'positive'}`;
+    document.getElementById('leverage').textContent = `Base: ${({veryLow:2,low:1.5,normal:1,high:0.5,extreme:0})[regime]}x | Vol: ${(vol*100).toFixed(1)}%`;
+
+    const sigClass = ['positive','accent','accent','negative'][aggSeverity];
+    document.getElementById('signal').textContent = severityLabel(aggSeverity);
+    document.getElementById('signal').className = `card-value ${sigClass}`;
+    document.getElementById('signalDetail').textContent = `${[spreadSev,fundVolSev].filter(s=>s>0).length} active dimensions`;
+
+    document.getElementById('deployment').textContent = `${deploy}% @ ${lev}x`;
+    document.getElementById('deployMode').textContent = `Mode: ${mode}`;
+
+    document.getElementById('equity').textContent = '$100,000';
+    document.getElementById('equityChange').textContent = 'Simulated - connect to Drift for live data';
+    document.getElementById('health').textContent = 'Inf';
+    document.getElementById('healthStatus').textContent = 'No open positions (dashboard mode)';
+
+    document.getElementById('status').textContent = 'Live';
+    document.getElementById('status').className = 'status';
+    document.getElementById('lastUpdate').textContent = `Updated: ${new Date().toLocaleTimeString()}`;
+
+    addLog(`Scan: regime=${regime}, signal=${severityLabel(aggSeverity)}, deploy=${deploy}% @ ${lev}x (${mode})`);
+  } catch (err) {
+    document.getElementById('status').textContent = 'Error';
+    document.getElementById('status').className = 'status error';
+    addLog(`Error: ${err.message}`, 'error');
+  }
+}
+
+update();
+addLog('Yogi dashboard started - fetching live Drift data + signal detection');
+setInterval(update, 60000);
+</script>
+</body>
+</html>
