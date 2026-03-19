@@ -3,3 +3,6 @@ dist/
 .env
 *.json.bak
 .DS_Store
+admin.json
+manager.json
+deploy.sh

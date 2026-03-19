@@ -1,12 +1,16 @@
-import { PublicKey } from "@solana/web3.js";
+import {
+  PublicKey,
+  SYSVAR_RENT_PUBKEY,
+} from "@solana/web3.js";
 import { VoltrClient } from "@voltr/vault-sdk";
 import BN from "bn.js";
 import {
   DRIFT_ADAPTOR_PROGRAM_ID,
   DRIFT_PROGRAM_ID,
+  DRIFT_SPOT_STATE,
   DISCRIMINATORS,
 } from "../config/constants";
-import { vaultAddress, VAULT_CONFIG } from "../config/vault";
+import { vaultAddress } from "../config/vault";
 import {
   getConnection,
   loadKeypair,
@@ -49,24 +53,26 @@ async function main() {
     ],
     DRIFT_PROGRAM_ID
   );
-  const [driftState] = PublicKey.findProgramAddressSync(
-    [Buffer.from("drift_state")],
-    DRIFT_PROGRAM_ID
-  );
 
+  console.log(`Vault Strategy Auth: ${vaultStrategyAuth.toBase58()}`);
   console.log(`Drift User Stats: ${driftUserStats.toBase58()}`);
   console.log(`Drift User: ${driftUser.toBase58()}`);
 
-  // Build additional args: vault name (as bytes) + enableMarginTrading (bool)
-  const nameBytes = Buffer.from(VAULT_CONFIG.name);
-  const nameLenBuf = Buffer.alloc(4);
-  nameLenBuf.writeUInt32LE(nameBytes.length);
-  const marginBuf = Buffer.from([1]); // Enable margin trading for perps
-  const additionalArgs = Buffer.concat([nameLenBuf, nameBytes, marginBuf]);
+  // Fetch vault name from on-chain account (raw 32-byte array)
+  const vaultAccount = await vc.fetchVaultAccount(vaultAddress);
+  const vaultNameBuffer = Buffer.from(vaultAccount.name);
+  console.log(`Vault name: ${vaultNameBuffer.toString("utf-8").trim()}`);
 
+  // Build additional args: raw vault name bytes (32) + enableMarginTrading (1 byte)
+  const enableMarginTradingBuffer = Buffer.from([1]); // Enable margin trading for perps
+  const additionalArgs = Buffer.concat([vaultNameBuffer, enableMarginTradingBuffer]);
+
+  // Following the official voltrxyz/drift-scripts pattern:
+  // - manager field = vault's on-chain manager (signer)
+  // - remainingAccounts = [driftProgram, userStats, user, driftState, delegatee, rent]
   const initStrategyIx = await vc.createInitializeStrategyIx(
     {
-      instructionDiscriminator: DISCRIMINATORS.INITIALIZE_USER,
+      instructionDiscriminator: Buffer.from(DISCRIMINATORS.INITIALIZE_USER),
       additionalArgs,
     },
     {
@@ -76,10 +82,12 @@ async function main() {
       strategy,
       adaptorProgram: DRIFT_ADAPTOR_PROGRAM_ID,
       remainingAccounts: [
+        { pubkey: DRIFT_PROGRAM_ID, isSigner: false, isWritable: false },
         { pubkey: driftUserStats, isSigner: false, isWritable: true },
         { pubkey: driftUser, isSigner: false, isWritable: true },
-        { pubkey: driftState, isSigner: false, isWritable: false },
-        { pubkey: DRIFT_PROGRAM_ID, isSigner: false, isWritable: false },
+        { pubkey: DRIFT_SPOT_STATE, isSigner: false, isWritable: true },
+        { pubkey: manager.publicKey, isSigner: false, isWritable: false },
+        { pubkey: SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false },
       ],
     }
   );

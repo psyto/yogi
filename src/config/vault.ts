@@ -1,3 +1,5 @@
+import dotenv from "dotenv";
+dotenv.config();
 import { PublicKey } from "@solana/web3.js";
 import { USDC_MINT, SPL_TOKEN_PROGRAM_ID } from "./constants";
 import BN from "bn.js";
@@ -6,7 +8,7 @@ import BN from "bn.js";
 export const VAULT_CONFIG = {
   name: "Yogi",
   description:
-    "Yogi Vault — Smarter than the average bear market vault. Drift basis trade alpha with intelligent signal detection.",
+    "Drift basis trade alpha with intelligent signal detection",
 
   assetMintAddress: USDC_MINT,
   assetTokenProgram: SPL_TOKEN_PROGRAM_ID,
