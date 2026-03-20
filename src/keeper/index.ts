@@ -79,12 +79,12 @@ async function initDriftClient(
     wallet,
     programID: DRIFT_PROGRAM_ID,
     activeSubAccountId: 0,
-    subAccountIds: [0],
-    authoritySubAccountMap: new Map([[VAULT_STRATEGY_AUTH.toBase58(), [0]]]),
+    authoritySubAccountMap: new Map([
+      [VAULT_STRATEGY_AUTH.toBase58(), [0]],
+    ]),
     accountSubscription: {
       type: "websocket",
     },
-    includeDelegates: true,
     skipLoadUsers: false,
   });
 
