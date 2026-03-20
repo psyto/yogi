@@ -55,7 +55,12 @@ interface MarketSnapshot {
 
 interface FundingHistoryEntry {
   ts: number;
-  fundingRate: number;
+  fundingRate: string | number;
+}
+
+interface FundingHistoryResponse {
+  success: boolean;
+  records: FundingHistoryEntry[];
 }
 
 // Rolling history for change detection
@@ -135,7 +140,8 @@ async function fetchFundingHistory(
     `${DRIFT_DATA_API}/market/${market}/fundingRates?limit=${limit}`
   );
   if (!res.ok) return [];
-  return res.json() as Promise<FundingHistoryEntry[]>;
+  const data = (await res.json()) as FundingHistoryResponse;
+  return data.records ?? [];
 }
 
 /**
@@ -231,7 +237,7 @@ async function detectFundingVolatility(
     let history = fundingHistory.get(market);
     if (!history || history.length === 0) {
       const fetched = await fetchFundingHistory(market, maxHistory);
-      history = fetched.map((e) => e.fundingRate);
+      history = fetched.map((e) => Number(e.fundingRate));
       fundingHistory.set(market, history);
     }
 
