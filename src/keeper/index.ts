@@ -2,7 +2,6 @@ import { Connection, Keypair } from "@solana/web3.js";
 import {
   DriftClient,
   Wallet,
-  BulkAccountLoader,
 } from "@drift-labs/sdk";
 import { getConnection, loadKeypair, sleep } from "../utils/helpers";
 import { STRATEGY_CONFIG } from "../config/vault";
@@ -64,15 +63,13 @@ async function initDriftClient(
   keypair: Keypair
 ): Promise<DriftClient> {
   const wallet = new Wallet(keypair);
-  const accountLoader = new BulkAccountLoader(connection, "confirmed", 5000);
 
   const driftClient = new DriftClient({
     connection,
     wallet,
     programID: DRIFT_PROGRAM_ID,
     accountSubscription: {
-      type: "polling",
-      accountLoader,
+      type: "websocket",
     },
   });
 
