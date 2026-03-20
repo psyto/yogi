@@ -376,7 +376,7 @@ async function runRebalance(driftClient: DriftClient): Promise<void> {
 
   for (const target of scaledTargets) {
     if (activeMarkets.has(target.marketIndex)) continue;
-    if (target.sizeUsd < 10) continue;
+    if (target.sizeUsd < 1) continue; // Min $1 position (Drift minimum is ~$1)
 
     let direction: "short" | "long" = "short";
     let entryReason = "funding positive -> short";
