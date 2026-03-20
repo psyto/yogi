@@ -263,22 +263,22 @@ The 32-day period was **calm** — no HIGH or CRITICAL signals fired. Yogi's adv
 
 ## Known Limitations
 
-1. **Signal detection has no track record** — The anomaly detector is theoretically sound but hasn't been tested through a real market crash. First stress event on mainnet will be the true validation.
+1. **Signal detection building track record** — The anomaly detector is live on mainnet since 2026-03-20. First stress event will be the definitive validation.
 2. **Regime matrices are manually tuned** — The 5x4 deployment/leverage matrices were designed from first principles, not optimized from historical data. They may need adjustment after live operation.
-3. **Funding rate proxy for OI** — The backtest reconstructs OI signals from funding rates, which are correlated but not identical. Live detection uses actual OI data.
-4. **Single-keeper architecture** — No multi-reporter consensus (unlike Vigil's on-chain oracle). The keeper is a single point of trust for signal detection.
+3. **Funding rate proxy for OI** — The backtest reconstructs OI signals from funding rates, which are correlated but not identical. Live detection uses actual OI data from Drift.
+4. **Single-keeper architecture** — No multi-reporter consensus. The keeper is a single point of trust for signal detection, running on AWS EC2 with pm2 auto-restart.
 
 ## Implementation Details
 
 ### Technology
 
 - **Vault infrastructure**: Voltr (Ranger Earn) — deposits, LP shares, fee collection
-- **Trading**: Drift Protocol v2 — perpetual futures execution
-- **Keeper**: TypeScript bot with signal detection and regime engine
+- **Trading**: Drift Protocol v2 — perpetual futures execution via delegate model
+- **Keeper**: TypeScript bot on AWS EC2 with pm2 (24/7, auto-restart on reboot)
 - **Signal detection**: 4-dimension anomaly detector with configurable thresholds
 - **Vol computation**: Parkinson estimator on SOL-PERP hourly candles
 - **Data feed**: Drift Data API — funding rates, market stats, OHLC candles
-- **RPC**: QuickNode
+- **RPC**: Helius (websocket subscription mode)
 
 ### Keeper Loop Architecture
 
@@ -299,14 +299,15 @@ Main Loop (30-second tick)
 
 ### Execution Flow
 
-1. **Deposit**: User deposits USDC --> Voltr vault mints LP tokens
-2. **Allocation**: Manager deposits USDC to Drift via adaptor
-3. **Signal check**: Keeper runs 4-dimension anomaly detection
-4. **Regime compute**: Vol regime x signal severity --> deployment + leverage
-5. **Cost check**: Keeper evaluates each market's funding vs. trading costs
-6. **Trading**: Keeper places SHORT/LONG perp orders (size = allocation x deployment% x leverage)
-7. **Monitoring**: 30-second health checks; 5-minute signal scans
-8. **Regime shift**: If signals spike, emergency rebalance reduces exposure immediately
-9. **Funding**: Positions accumulate funding payments hourly
-10. **NAV update**: Vault NAV reflects Drift account equity
-11. **Withdrawal**: User requests --> 24h cooldown --> receives USDC
+1. **Deposit**: User deposits USDC --> Voltr vault (`BFDTTG8n...`) mints LP tokens
+2. **Allocation**: Manager deposits USDC to Drift via Voltr adaptor CPI
+3. **Delegate**: Keeper (manager) has delegate authority on vault's Drift user (`HURzSV...`)
+4. **Signal check**: Keeper runs 4-dimension anomaly detection every 5 minutes
+5. **Regime compute**: Vol regime x signal severity --> deployment + leverage
+6. **Cost check**: Keeper evaluates each market's funding vs. trading costs
+7. **Trading**: Keeper places SHORT/LONG perp orders as delegate (size = allocation x deployment% x leverage)
+8. **Monitoring**: 30-second health checks; 5-minute signal scans
+9. **Regime shift**: If signals spike, emergency rebalance reduces exposure immediately
+10. **Funding**: Positions accumulate funding payments hourly
+11. **NAV update**: Vault NAV reflects Drift account equity (on-chain verifiable)
+12. **Withdrawal**: User requests --> 24h cooldown --> receives USDC via Voltr adaptor

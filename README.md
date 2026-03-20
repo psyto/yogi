@@ -206,37 +206,79 @@ open demo/dashboard.html       # Live monitoring dashboard
 node demo/record.js            # Generate demo video (requires puppeteer + ffmpeg)
 ```
 
-## Setup
+## Mainnet Deployment
+
+Yogi is **live on Solana mainnet** with an automated keeper running 24/7 on AWS EC2.
+
+### On-Chain Addresses
+
+| Component | Address |
+|-----------|---------|
+| Voltr Vault | `BFDTTG8nJF7uLf3wsqFJpYCvC6wA6BahBRKjTgtKPy4n` |
+| Vault Admin | `58dpPSAM3PuzziKgRkFGTFM3xY4fH4xFgzDBe3nnF6gg` |
+| Vault Manager | `9Rx3i7GyVFFUYGKCMDZQpqnoJgSzo3R1qwmsAN5aiiSu` |
+| Drift Strategy PDA | `FCxpLFtjChHjJ86V9mYFTN2QGXHPxR5LjLPGVGBA68rJ` |
+| Vault Drift User | `HURzSVDvBBA9VEZ1j1SQhn4iHUhxua3ZNhFejGgfpuq8` |
+| Voltr Program | `vVoLTRjQmtFpiYoegx285Ze4gsLJ8ZxgFKVcuvmG1a8` |
+| Drift Adaptor | `EBN93eXs5fHGBABuajQqdsKRkCgaqtJa8vEFD6vKXiP` |
+| Drift Program | `dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH` |
+
+### Deployment Architecture
+
+```
+User deposits USDC --> Voltr Vault (BFDTTG8n...)
+                       |
+                       +-- manager-deposit-strategy --> Drift Adaptor CPI
+                       |                                |
+                       |                                +-- Vault Drift User (HURzSV...)
+                       |                                    |
+                       +-- Keeper (EC2, 24/7)               |
+                            |                               |
+                            +-- Delegate trading authority --+
+                            +-- Signal detection (5 min)
+                            +-- Health monitoring (30 sec)
+                            +-- Rebalance (4 hours)
+```
+
+The keeper operates as a **delegate** on the vault's Drift user account. Capital flows through the Voltr adaptor (deposit/withdraw), while trading uses Drift SDK's delegate model for order placement. This means all trades and PnL are on-chain and verifiable through the vault's Drift account.
+
+### Deployment Steps
 
 ```bash
+# 1. Clone and install
 git clone https://github.com/psyto/yogi.git
 cd yogi
 npm install
+
+# 2. Configure
 cp .env.example .env
-# Edit .env with your RPC URL and keypair paths
+# Edit .env with RPC URL, keypair paths, vault address
 
-# Deploy
-npm run admin:init-vault
-npm run admin:add-adaptor
-npm run manager:init-strategy
+# 3. Initialize vault (one-time)
+npm run admin:init-vault        # Creates Voltr vault, outputs VAULT_ADDRESS
+npm run admin:add-adaptor       # Registers Drift adaptor
+npx tsx src/scripts/manager-init-strategy.ts  # Initializes Drift user for vault
 
-# Test on devnet
-npm run test:devnet
+# 4. Deposit USDC
+npx tsx src/scripts/user-deposit-vault.ts           # User deposits to vault
+npx tsx src/scripts/manager-deposit-strategy.ts     # Manager moves funds to Drift
 
-# Run keeper
-npm run keeper
-
-# Run backtest
-npm run backtest
+# 5. Run keeper
+npm run keeper                  # Local
+# Or with pm2 for production:
+pm2 start 'npx tsx src/keeper/index.ts' --name yogi-keeper
+pm2 save && pm2 startup
 ```
 
 ## Tech Stack
 
-- **On-chain**: [Voltr Vault](https://docs.ranger.finance) + [Drift Protocol v2](https://docs.drift.trade)
-- **Off-chain**: TypeScript keeper with signal detection and regime engine
-- **Lending**: Multi-protocol (Kamino, Marginfi, Drift Earn)
-- **Data**: [Drift Data API](https://data.api.drift.trade) for OI, mark/oracle, funding, candles
-- **RPC**: QuickNode (or any Solana RPC provider)
+- **Vault infrastructure**: [Voltr / Ranger Earn](https://vaults.ranger.finance) — deposits, LP shares, fee collection
+- **Trading**: [Drift Protocol v2](https://docs.drift.trade) — perpetual futures execution via delegate model
+- **Keeper**: TypeScript bot on AWS EC2 with pm2 process management
+- **Signal detection**: 4-dimension anomaly detector with configurable thresholds
+- **Vol computation**: Parkinson estimator on SOL-PERP hourly candles
+- **Data feed**: [Drift Data API](https://data.api.drift.trade) — funding rates, market stats, OHLC candles
+- **RPC**: Helius (websocket subscription mode)
 
 ## Hackathon
 
@@ -244,10 +286,11 @@ Built for the [Ranger Build-A-Bear Hackathon](https://ranger.finance/build-a-bea
 
 - **Track**: Main + Drift Side Track
 - **Base asset**: USDC
-- **Target APY**: 20-30% (4 stacked yield sources + intelligent deployment)
-- **Edge**: Drift-native arbitrage + Vigil-inspired anomaly detection = adaptive bear market vault
-- **Revenue**: Funding + premium convergence + OI rebalancing + LST staking + lending
+- **Target APY**: 12-18% (hostile) / 20-30% (normal) — 5 stacked yield sources
+- **Edge**: Drift-native arbitrage + forward-looking anomaly detection = adaptive bear market vault
+- **Revenue**: Funding + premium convergence + OI rebalancing + LST staking + optimized lending
 - **Lock period**: 3-month rolling
+- **Vault on-chain**: `BFDTTG8nJF7uLf3wsqFJpYCvC6wA6BahBRKjTgtKPy4n`
 
 ## License
 
