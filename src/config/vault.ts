@@ -45,7 +45,7 @@ export const STRATEGY_CONFIG = {
   useImbalanceSignals: true,
 
   // Order execution (maker-first)
-  useLimitOrders: true,
+  useLimitOrders: false,
   driftMakerFeeBps: -0.2,
   driftTakerFeeBps: 3.5,
   limitOrderSpreadBps: 2,

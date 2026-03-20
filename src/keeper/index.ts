@@ -445,6 +445,18 @@ async function main(): Promise<void> {
   const driftClient = await initDriftClient(connection, managerKeypair);
   console.log("Drift client connected.\n");
 
+  // Cancel any stale open orders from previous runs
+  try {
+    const openOrders = driftClient.getUser().getOpenOrders();
+    if (openOrders.length > 0) {
+      console.log(`Cancelling ${openOrders.length} stale open orders...`);
+      await driftClient.cancelOrders();
+      console.log("Orders cancelled.");
+    }
+  } catch (e) {
+    console.error("Failed to cancel stale orders:", e);
+  }
+
   // Initialize all systems
   await updateLeverage();
   await runSignalDetection();
