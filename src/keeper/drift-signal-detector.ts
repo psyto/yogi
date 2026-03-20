@@ -142,7 +142,8 @@ async function fetchFundingHistory(
   );
   if (!res.ok) return [];
   const data = (await res.json()) as FundingHistoryResponse;
-  return data.records ?? [];
+  if (!data.records || !Array.isArray(data.records)) return [];
+  return data.records;
 }
 
 /**

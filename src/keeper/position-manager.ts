@@ -3,6 +3,7 @@ import {
   PositionDirection,
   OrderType,
   MarketType,
+  PostOnlyParams,
   BN,
 } from "@drift-labs/sdk";
 import { STRATEGY_CONFIG } from "../config/vault";
@@ -117,7 +118,7 @@ export async function openBasisPosition(
       baseAssetAmount: new BN(Math.floor(baseAmount)),
       price: new BN(limitPrice),
       reduceOnly: false,
-      postOnly: true,
+      postOnly: PostOnlyParams.MUST_POST_ONLY,
     };
 
     const txSig = await driftClient.placePerpOrder(orderParams);
@@ -169,7 +170,7 @@ export async function closeBasisPosition(
       baseAssetAmount: position.baseAssetAmount.abs(),
       price: new BN(limitPrice),
       reduceOnly: true,
-      postOnly: true,
+      postOnly: PostOnlyParams.MUST_POST_ONLY,
     };
 
     const txSig = await driftClient.placePerpOrder(orderParams);
