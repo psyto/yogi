@@ -1,8 +1,10 @@
-import { Connection, Keypair } from "@solana/web3.js";
+import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import {
   DriftClient,
   Wallet,
+  getUserAccountPublicKeySync,
 } from "@drift-labs/sdk";
+import BN from "bn.js";
 import { getConnection, loadKeypair, sleep } from "../utils/helpers";
 import { STRATEGY_CONFIG } from "../config/vault";
 import { DRIFT_PROGRAM_ID } from "../config/constants";
@@ -58,36 +60,54 @@ let currentSignals: DriftSignalState = {
 };
 let currentRegime: DriftRegime | undefined;
 
+// Vault's Drift user authority (vaultStrategyAuth PDA)
+const VAULT_STRATEGY_AUTH = new PublicKey(
+  "4dvzQ6Hux3YFJuWUcdqgYRddJFa8yo5EDzL7a49PyxLB"
+);
+
 async function initDriftClient(
   connection: Connection,
   keypair: Keypair
 ): Promise<DriftClient> {
   const wallet = new Wallet(keypair);
 
+  // Manager is the delegate on the vault's Drift user.
+  // We use authoritySubAccountMap to load the vault's Drift user,
+  // allowing the keeper to trade on behalf of the vault.
   const driftClient = new DriftClient({
     connection,
     wallet,
     programID: DRIFT_PROGRAM_ID,
     activeSubAccountId: 0,
     subAccountIds: [0],
+    authoritySubAccountMap: new Map([[VAULT_STRATEGY_AUTH.toBase58(), [0]]]),
     accountSubscription: {
       type: "websocket",
     },
-    includeDelegates: false,
+    includeDelegates: true,
     skipLoadUsers: false,
   });
 
   console.log("Subscribing to Drift...");
   await driftClient.subscribe();
-  console.log("Subscribed. Adding user...");
-  await driftClient.addUser(0);
-  console.log("User added. Checking...");
+
+  // Switch active user to vault's Drift user
+  const vaultUserKey = getUserAccountPublicKeySync(
+    DRIFT_PROGRAM_ID,
+    VAULT_STRATEGY_AUTH,
+    0
+  );
+  console.log(`Vault Drift user: ${vaultUserKey.toBase58()}`);
 
   try {
+    await driftClient.addUser(0, VAULT_STRATEGY_AUTH);
+    await driftClient.switchActiveUser(0, VAULT_STRATEGY_AUTH);
     const user = driftClient.getUser();
-    console.log(`User found: ${user.getUserAccountPublicKey().toBase58()}`);
+    const equity = user.getTotalCollateral().toNumber() / 1e6;
+    console.log(`Active user: ${user.getUserAccountPublicKey().toBase58()}`);
+    console.log(`Equity: $${equity.toFixed(2)}`);
   } catch (e) {
-    console.error("User check failed:", e);
+    console.error("User setup failed:", e);
   }
 
   return driftClient;
