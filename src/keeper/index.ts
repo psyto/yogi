@@ -73,14 +73,21 @@ async function initDriftClient(
     accountSubscription: {
       type: "websocket",
     },
+    includeDelegates: false,
+    skipLoadUsers: false,
   });
 
+  console.log("Subscribing to Drift...");
   await driftClient.subscribe();
+  console.log("Subscribed. Adding user...");
+  await driftClient.addUser(0);
+  console.log("User added. Checking...");
 
-  // Wait for user account to be loaded
-  const user = driftClient.getUser();
-  if (!user.isSubscribed) {
-    await user.subscribe();
+  try {
+    const user = driftClient.getUser();
+    console.log(`User found: ${user.getUserAccountPublicKey().toBase58()}`);
+  } catch (e) {
+    console.error("User check failed:", e);
   }
 
   return driftClient;
