@@ -68,12 +68,21 @@ async function initDriftClient(
     connection,
     wallet,
     programID: DRIFT_PROGRAM_ID,
+    activeSubAccountId: 0,
+    subAccountIds: [0],
     accountSubscription: {
       type: "websocket",
     },
   });
 
   await driftClient.subscribe();
+
+  // Wait for user account to be loaded
+  const user = driftClient.getUser();
+  if (!user.isSubscribed) {
+    await user.subscribe();
+  }
+
   return driftClient;
 }
 
