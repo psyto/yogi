@@ -56,6 +56,7 @@ interface MarketSnapshot {
 interface FundingHistoryEntry {
   ts: number;
   fundingRate: string | number;
+  oraclePriceTwap: string | number;
 }
 
 interface FundingHistoryResponse {
@@ -237,7 +238,14 @@ async function detectFundingVolatility(
     let history = fundingHistory.get(market);
     if (!history || history.length === 0) {
       const fetched = await fetchFundingHistory(market, maxHistory);
-      history = fetched.map((e) => Number(e.fundingRate));
+      // Normalize funding rate by oracle price to get a proportional rate.
+      // Drift API returns fundingRate in absolute price terms (e.g. 1.044 for BTC),
+      // not as a proportion. Dividing by oraclePriceTwap gives the actual rate.
+      history = fetched.map((e) => {
+        const rate = Number(e.fundingRate);
+        const oracle = Number(e.oraclePriceTwap);
+        return oracle > 0 ? rate / oracle : 0;
+      });
       fundingHistory.set(market, history);
     }
 
@@ -248,8 +256,8 @@ async function detectFundingVolatility(
     const variance = recent.reduce((s, r) => s + (r - mean) ** 2, 0) / recent.length;
     const stdDev = Math.sqrt(variance);
 
-    // Annualize: stdDev per 8h period x sqrt(3 x 365)
-    const annualizedVolBps = stdDev * Math.sqrt(3 * 365) * 10000;
+    // Annualize: stdDev per 1h period x sqrt(24 x 365) and convert to bps
+    const annualizedVolBps = stdDev * Math.sqrt(24 * 365) * 10000;
 
     if (annualizedVolBps > maxFundingVol) {
       maxFundingVol = annualizedVolBps;
