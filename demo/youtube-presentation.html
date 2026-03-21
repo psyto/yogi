@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1920, height=1080">
+<title>Yogi Vault — YouTube Demo</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: 1920px; height: 1080px; overflow: hidden; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; background: #0a0a0f; color: #e0e0e0; }
+  .slide { position: absolute; top: 0; left: 0; width: 1920px; height: 1080px; display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.8s ease; padding: 80px; }
+  .slide.active { opacity: 1; }
+  h1 { font-size: 72px; margin-bottom: 20px; }
+  h2 { font-size: 52px; margin-bottom: 30px; color: #8b9dc3; }
+  h3 { font-size: 36px; margin-bottom: 20px; color: #6b7b9c; }
+  p { font-size: 28px; line-height: 1.6; max-width: 1400px; text-align: center; }
+  .accent { color: #f0b040; }
+  .green { color: #40c057; }
+  .red { color: #e03131; }
+  .dim { color: #666; }
+  .blue { color: #5fb3d4; }
+  .title-slide h1 { font-size: 96px; }
+  .title-slide .subtitle { font-size: 32px; color: #8b9dc3; margin-top: 10px; }
+  .title-slide .tagline { font-size: 40px; color: #f0b040; margin-top: 30px; }
+
+  .terminal { background: #111118; border: 1px solid #333; border-radius: 12px; padding: 30px 40px; width: 1500px; text-align: left; font-size: 20px; line-height: 1.8; overflow: hidden; }
+  .terminal .prompt { color: #40c057; }
+  .terminal .time { color: #666; }
+  .terminal .label { color: #5fb3d4; }
+  .terminal .warn { color: #f0b040; }
+  .terminal .crit { color: #e03131; }
+  .terminal .ok { color: #40c057; }
+
+  .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; width: 1400px; }
+  .stat-card { background: #111118; border: 1px solid #333; border-radius: 12px; padding: 30px; text-align: center; }
+  .stat-value { font-size: 52px; color: #f0b040; margin: 10px 0; }
+  .stat-label { font-size: 20px; color: #888; }
+
+  table { width: 1400px; border-collapse: collapse; font-size: 22px; }
+  th { color: #f0b040; padding: 14px 20px; text-align: left; border-bottom: 2px solid #333; }
+  td { padding: 14px 20px; border-bottom: 1px solid #222; }
+  td.green { color: #40c057; }
+  td.red { color: #e03131; }
+
+  .progress { position: fixed; bottom: 0; left: 0; height: 4px; background: #f0b040; transition: width 0.5s ease; z-index: 100; }
+  .slide-number { position: fixed; bottom: 20px; right: 40px; font-size: 18px; color: #444; z-index: 100; }
+
+  .fade-item { opacity: 0; transform: translateY(20px); transition: all 0.6s ease; }
+  .fade-item.visible { opacity: 1; transform: translateY(0); }
+
+  .two-col { display: flex; gap: 40px; width: 1500px; align-items: flex-start; }
+  .two-col > div { flex: 1; }
+
+  .signal-box { display: flex; gap: 16px; width: 1500px; margin-top: 20px; }
+  .sig-card { flex: 1; border-radius: 12px; padding: 20px; text-align: center; background: #111118; border: 1px solid #333; }
+  .sig-card.active-sig { border-color: #f0b040; }
+
+  .matrix-cell { padding: 8px 16px; text-align: center; font-size: 18px; }
+  .matrix-cell.highlight { background: #1a1a2e; border: 1px solid #f0b040; border-radius: 6px; }
+
+  .flow-arrow { color: #f0b040; font-size: 36px; margin: 0 20px; }
+  .flow-box { background: #111118; border: 1px solid #333; border-radius: 12px; padding: 20px 30px; text-align: center; }
+
+  .big-number { font-size: 120px; color: #f0b040; font-weight: bold; }
+  .big-label { font-size: 32px; color: #888; margin-top: 10px; }
+</style>
+</head>
+<body>
+
+<!-- Slide 1: Title -->
+<div class="slide title-slide" id="slide-1">
+  <div class="fade-item" style="font-size: 140px; margin-bottom: 20px;">&#x1f43b;</div>
+  <h1 class="fade-item">Yogi Vault</h1>
+  <div class="subtitle fade-item">Funding Rate Arbitrage + 5D Signal Detection</div>
+  <div class="tagline fade-item">"Smarter than the average bear market vault."</div>
+  <p class="fade-item" style="margin-top: 40px; color: #666;">Live on Solana Mainnet | Drift Protocol | Ranger Earn</p>
+</div>
+
+<!-- Slide 2: What is funding rate? -->
+<div class="slide" id="slide-2">
+  <h2 class="fade-item">What is a Funding Rate?</h2>
+  <div style="display: flex; gap: 40px; width: 1400px; margin-top: 40px;">
+    <div class="fade-item" style="width: 500px; flex-shrink: 0;">
+      <div class="terminal" style="width: 100%;">
+        <span class="label">Perpetual Futures</span><br><br>
+        <span class="green">BULLISH</span> market:<br>
+        &nbsp;&nbsp;Longs pay Shorts<br>
+        &nbsp;&nbsp;= <span class="accent">positive funding</span><br><br>
+        <span class="red">BEARISH</span> market:<br>
+        &nbsp;&nbsp;Shorts pay Longs<br>
+        &nbsp;&nbsp;= <span class="red">negative funding</span>
+      </div>
+    </div>
+    <div class="fade-item" style="width: 860px; flex-shrink: 0;">
+      <div class="terminal" style="width: 100%;">
+        <span class="label">Current Drift Funding Rates</span><br><br>
+        DOGE-PERP: <span class="green">+2,148% APY</span><br>
+        SUI-PERP:&nbsp; <span class="green">+1,154% APY</span><br>
+        BTC-PERP:&nbsp; <span class="green">+154% APY</span><br>
+        AVAX-PERP: <span class="green">+265% APY</span><br>
+        SOL-PERP:&nbsp; <span class="red">-1,328% APY</span><br>
+        ETH-PERP:&nbsp; <span class="red">-73% APY</span><br><br>
+        <span class="accent">Short DOGE = collect 2,148% APY</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 3: The Strategy -->
+<div class="slide" id="slide-3">
+  <h2 class="fade-item">The Strategy</h2>
+  <p class="fade-item" style="font-size: 32px; margin-bottom: 40px;">Short assets with high positive funding. Collect the payment. Repeat.</p>
+  <div class="terminal fade-item" style="font-size: 22px;">
+    <span class="label">Capital Flow</span><br><br>
+    User USDC ──&gt; Voltr Vault ──&gt; Drift Adaptor ──&gt; Drift Perps<br><br>
+    &nbsp;&nbsp;30% ──&gt; Lending Floor (Kamino ~6.5% APY)<br>
+    &nbsp;&nbsp;70% ──&gt; Regime-Adaptive Arbitrage<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── SHORT when funding positive<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── LONG when funding negative<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── Deployment scaled by regime engine<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── 5D signal detection every 5 min
+  </div>
+</div>
+
+<!-- Slide 4: The Problem -->
+<div class="slide" id="slide-4">
+  <h2 class="fade-item">The Problem with Other Vaults</h2>
+  <p class="fade-item" style="font-size: 30px; margin-bottom: 40px;">Most vaults scale leverage based on volatility. Volatility is a <span class="red">lagging indicator</span>.</p>
+  <table class="fade-item">
+    <tr><th>Scenario</th><th>Vol-Only Vault</th><th>Yogi</th></tr>
+    <tr>
+      <td>Low vol, no stress</td>
+      <td>100% @ 2.0x</td>
+      <td class="green">100% @ 2.0x (same)</td>
+    </tr>
+    <tr>
+      <td>Low vol, OI shifting rapidly</td>
+      <td class="red">100% @ 2.0x (blind)</td>
+      <td class="green">80% @ 1.5x (cautious)</td>
+    </tr>
+    <tr>
+      <td>Low vol, liquidation cascade starting</td>
+      <td class="red">100% @ 2.0x (blind)</td>
+      <td class="green">25% @ 0.5x (defensive)</td>
+    </tr>
+    <tr>
+      <td>High vol, critical signals</td>
+      <td class="red">50% @ 0.5x (still exposed)</td>
+      <td class="green">10% @ 0.0x (shut down)</td>
+    </tr>
+  </table>
+  <p class="fade-item" style="margin-top: 30px; font-size: 24px; color: #888;">By the time volatility spikes, the damage is done. Yogi folds sails <span class="accent">before</span> the storm.</p>
+</div>
+
+<!-- Slide 5: 5D Signal Detection -->
+<div class="slide" id="slide-5">
+  <h2 class="fade-item">5D Signal Detection</h2>
+  <div class="signal-box">
+    <div class="sig-card fade-item">
+      <h3 style="font-size: 24px;">1. OI Shift</h3>
+      <p style="font-size: 18px;">Mass repositioning<br>detected in real-time</p>
+    </div>
+    <div class="sig-card fade-item">
+      <h3 style="font-size: 24px;">2. Liquidation</h3>
+      <p style="font-size: 18px;">Forced selling from<br>OI contraction</p>
+    </div>
+    <div class="sig-card fade-item">
+      <h3 style="font-size: 24px;">3. Funding Vol</h3>
+      <p style="font-size: 18px;">Unstable rates signal<br>regime transition</p>
+    </div>
+    <div class="sig-card fade-item">
+      <h3 style="font-size: 24px;">4. Spread</h3>
+      <p style="font-size: 18px;">Mark/oracle divergence<br>= thin liquidity</p>
+    </div>
+    <div class="sig-card active-sig fade-item">
+      <h3 style="font-size: 24px; color: #f0b040;">5. Cross-Venue</h3>
+      <p style="font-size: 18px;">Drift vs Binance vs Bybit<br><span class="accent">unique to Yogi</span></p>
+    </div>
+  </div>
+  <p class="fade-item" style="margin-top: 30px; font-size: 26px;">Each dimension runs every <span class="accent">5 minutes</span>. Max severity drives the regime engine.</p>
+</div>
+
+<!-- Slide 6: Cross-Venue in Action -->
+<div class="slide" id="slide-6">
+  <h2 class="fade-item">Cross-Venue Intelligence — Live Data</h2>
+  <div class="terminal fade-item" style="font-size: 22px;">
+    <span class="label">Cross-venue funding comparison:</span><br><br>
+    &nbsp;&nbsp;SOL-PERP: Drift=<span class="red">-1328.9%</span> | Bin=<span class="red">-1.1%</span> | Byb=<span class="green">+11.0%</span> | spread=<span class="red">-1333.9%</span> &#x2192; <span class="crit">drift_low</span><br>
+    &nbsp;&nbsp;BTC-PERP: Drift=<span class="green">+154.6%</span> | Bin=<span class="red">-0.9%</span> | Byb=<span class="green">+0.3%</span> | spread=<span class="green">+154.9%</span> &#x2192; <span class="warn">drift_high</span><br>
+    &nbsp;&nbsp;DOGE-PERP: Drift=<span class="green">+1958.4%</span> | Bin=<span class="red">-6.4%</span> | Byb=<span class="green">+3.3%</span> | spread=<span class="green">+1960.0%</span> &#x2192; <span class="warn">drift_high</span><br>
+    &nbsp;&nbsp;SUI-PERP: Drift=<span class="green">+1140.6%</span> | Bin=<span class="green">+0.3%</span> | Byb=<span class="red">-14.2%</span> | spread=<span class="green">+1147.5%</span> &#x2192; <span class="warn">drift_high</span><br>
+    &nbsp;&nbsp;AVAX-PERP: Drift=<span class="green">+270.5%</span> | Bin=<span class="green">+2.6%</span> | Byb=<span class="green">+11.0%</span> | spread=<span class="green">+263.7%</span> &#x2192; <span class="warn">drift_high</span>
+  </div>
+  <p class="fade-item" style="margin-top: 30px; font-size: 26px;">
+    DOGE on Drift: <span class="green">+1,958%</span>. Binance: <span class="red">-6%</span>. That <span class="accent">1,964% spread</span> is real.<br>
+    <span class="dim">No other Drift vault compares funding across venues.</span>
+  </p>
+</div>
+
+<!-- Slide 7: Regime Engine -->
+<div class="slide" id="slide-7">
+  <h2 class="fade-item">Regime Engine — Deployment Matrix</h2>
+  <table class="fade-item" style="font-size: 20px; width: 1200px;">
+    <tr>
+      <th></th>
+      <th>CLEAR</th>
+      <th>LOW</th>
+      <th>HIGH</th>
+      <th>CRITICAL</th>
+    </tr>
+    <tr>
+      <td><strong>Very Low</strong> (&lt;20%)</td>
+      <td class="green">100% @ 2.0x</td>
+      <td>80% @ 1.5x</td>
+      <td>50% @ 1.0x</td>
+      <td class="red">25% @ 0.5x</td>
+    </tr>
+    <tr>
+      <td><strong>Low</strong> (20-35%)</td>
+      <td class="green">85% @ 1.5x</td>
+      <td>70% @ 1.2x</td>
+      <td>40% @ 0.8x</td>
+      <td class="red">20% @ 0.3x</td>
+    </tr>
+    <tr>
+      <td><strong>Normal</strong> (35-50%)</td>
+      <td>70% @ 1.0x</td>
+      <td>55% @ 0.8x</td>
+      <td>30% @ 0.5x</td>
+      <td class="red">15% @ 0.2x</td>
+    </tr>
+    <tr>
+      <td><strong>High</strong> (50-75%)</td>
+      <td>50% @ 0.5x</td>
+      <td>35% @ 0.3x</td>
+      <td class="red">20% @ 0.2x</td>
+      <td class="red">10% @ 0.0x</td>
+    </tr>
+    <tr>
+      <td><strong>Extreme</strong> (&gt;75%)</td>
+      <td class="red">0% @ 0.0x</td>
+      <td class="red">0% @ 0.0x</td>
+      <td class="red">0% @ 0.0x</td>
+      <td class="red">0% @ 0.0x</td>
+    </tr>
+  </table>
+  <p class="fade-item" style="margin-top: 30px; font-size: 24px;">
+    Currently: <span class="accent">High vol (61%) + CLEAR signals = 50% deployed @ 0.5x (cautious)</span><br>
+    <span class="dim">Signals can only reduce deployment, never increase it.</span>
+  </p>
+</div>
+
+<!-- Slide 8: Live Keeper Output -->
+<div class="slide" id="slide-8">
+  <h2 class="fade-item">Live Keeper — Running on Mainnet</h2>
+  <div class="terminal fade-item" style="font-size: 18px; line-height: 1.9;">
+    <span class="ok">Yogi Keeper Starting...</span><br>
+    Strategy: Drift basis trade alpha + intelligent signal detection<br>
+    Vault Drift user: HURzSVDvBBA9VEZ1j1SQhn4iHUhxua3ZNhFejGgfpuq8<br>
+    Equity: <span class="accent">$500.00</span><br><br>
+    <span class="label">--- Signal Detection ---</span><br>
+    Signal: <span class="ok">CLEAR</span> — no anomalies detected<br>
+    Cross-venue: DOGE <span class="green">+1958%</span> vs Bin <span class="red">-6%</span> | SUI <span class="green">+1140%</span> vs Bin <span class="green">+0.3%</span><br>
+    Regime: high vol, no anomalies &#x2192; 50% deployed @ 0.5x<br><br>
+    <span class="label">--- Funding Rate Scan ---</span><br>
+    Markets: 73 total &#x2192; 3 positive funding &#x2192; 3 cost-viable<br>
+    &nbsp;&nbsp;1. DOGE-PERP: <span class="green">2,148% APY</span><br>
+    &nbsp;&nbsp;2. SUI-PERP: <span class="green">1,154% APY</span><br>
+    &nbsp;&nbsp;3. AVAX-PERP: <span class="green">265% APY</span><br><br>
+    <span class="label">--- Rebalance ---</span><br>
+    <span class="ok">Opened SHORT MARKET $49.94 on DOGE-PERP</span> | XV: +1960% above CEX<br>
+    <span class="ok">Opened SHORT MARKET $28.28 on SUI-PERP</span> | XV: +1147% above CEX<br>
+    <span class="ok">Opened SHORT MARKET $6.50 on AVAX-PERP</span> | XV: +264% above CEX<br><br>
+    <span class="time">[2026-03-21]</span> Positions: 3 | Equity: <span class="accent">$499.98</span> | Regime: cautious (50% @ 0.5x) | Signal: CLEAR
+  </div>
+</div>
+
+<!-- Slide 9: On-Chain Architecture -->
+<div class="slide" id="slide-9">
+  <h2 class="fade-item">Fully On-Chain — Verifiable</h2>
+  <div class="terminal fade-item" style="font-size: 20px;">
+    <span class="label">On-Chain Addresses (Solana Mainnet)</span><br><br>
+    Voltr Vault:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="accent">BFDTTG8nJF7uLf3wsqFJpYCvC6wA6BahBRKjTgtKPy4n</span><br>
+    Drift Strategy:&nbsp;&nbsp; FCxpLFtjChHjJ86V9mYFTN2QGXHPxR5LjLPGVGBA68rJ<br>
+    Vault Drift User: HURzSVDvBBA9VEZ1j1SQhn4iHUhxua3ZNhFejGgfpuq8<br><br>
+    <span class="label">Architecture</span><br><br>
+    User USDC &#x2192; Voltr Vault &#x2192; Drift Adaptor CPI &#x2192; Vault Drift User<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#x2191;<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Keeper (EC2) &#x2500;&#x2500; delegate trading &#x2500;&#x2500;&#x2518;<br><br>
+    <span class="dim">Every trade, every funding payment, every entry/exit — on-chain and verifiable.</span>
+  </div>
+</div>
+
+<!-- Slide 10: Yield Stack -->
+<div class="slide" id="slide-10">
+  <h2 class="fade-item">Yield Stack — 5 Revenue Sources</h2>
+  <table class="fade-item">
+    <tr><th>Source</th><th>Mechanism</th><th>Est. APY</th></tr>
+    <tr>
+      <td>Funding harvesting</td>
+      <td>Bidirectional perp positions collect funding</td>
+      <td class="green">6-10%</td>
+    </tr>
+    <tr>
+      <td>Premium convergence</td>
+      <td>Mark/oracle deviation mean-reverts</td>
+      <td class="green">2-4%</td>
+    </tr>
+    <tr>
+      <td>Lending floor</td>
+      <td>30% idle capital to Kamino/Marginfi</td>
+      <td class="green">1.5-2%</td>
+    </tr>
+    <tr>
+      <td>LST collateral</td>
+      <td>jitoSOL staking + MEV yield</td>
+      <td class="green">1.5-2%</td>
+    </tr>
+    <tr>
+      <td>Maker rebates</td>
+      <td>postOnly orders earn -0.002% rebate</td>
+      <td>0.06%</td>
+    </tr>
+    <tr style="border-top: 2px solid #f0b040;">
+      <td><strong>Combined</strong></td>
+      <td></td>
+      <td class="accent"><strong>12-18% (hostile) / 20-30% (normal)</strong></td>
+    </tr>
+  </table>
+</div>
+
+<!-- Slide 11: Risk Management -->
+<div class="slide" id="slide-11">
+  <h2 class="fade-item">Risk Management</h2>
+  <div class="stats-grid fade-item">
+    <div class="stat-card">
+      <div class="stat-label">Max Leverage</div>
+      <div class="stat-value">2x</div>
+      <div class="stat-label">regime-adaptive</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Health Check</div>
+      <div class="stat-value">30s</div>
+      <div class="stat-label">240x/rebalance</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Signal Scan</div>
+      <div class="stat-value">5min</div>
+      <div class="stat-label">5 dimensions</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Max Drawdown</div>
+      <div class="stat-value">3%</div>
+      <div class="stat-label">reduce / 5% close all</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Min Hold</div>
+      <div class="stat-value">7d</div>
+      <div class="stat-label">max 2 rotations/week</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Infra Cost</div>
+      <div class="stat-value">$4/mo</div>
+      <div class="stat-label">EC2 t3.micro + pm2</div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 12: Closing -->
+<div class="slide title-slide" id="slide-12">
+  <div class="fade-item" style="font-size: 140px; margin-bottom: 20px;">&#x1f43b;</div>
+  <h1 class="fade-item">Yogi Vault</h1>
+  <div class="tagline fade-item">Live on Solana Mainnet. Open Source.</div>
+  <p class="fade-item" style="margin-top: 40px; font-size: 28px;">
+    github.com/psyto/yogi<br><br>
+    <span class="dim">Built for Ranger Build-A-Bear Hackathon</span><br>
+    <span class="dim">Drift Protocol x Ranger Earn</span>
+  </p>
+</div>
+
+<div class="progress" id="progress"></div>
+<div class="slide-number" id="slide-number">1 / 12</div>
+
+<script>
+  const TOTAL = 12;
+  let current = 0;
+  function show(n) {
+    document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
+    const sl = document.getElementById('slide-' + (n + 1));
+    if (sl) {
+      sl.querySelectorAll('.fade-item').forEach(e => e.classList.remove('visible'));
+      sl.classList.add('active');
+    }
+    document.getElementById('progress').style.width = ((n + 1) / TOTAL * 100) + '%';
+    document.getElementById('slide-number').textContent = (n + 1) + ' / ' + TOTAL;
+  }
+  show(0);
+  setInterval(() => {
+    current = (current + 1) % TOTAL;
+    show(current);
+    const sl = document.getElementById('slide-' + (current + 1));
+    if (sl) {
+      const items = sl.querySelectorAll('.fade-item');
+      items.forEach((item, i) => {
+        setTimeout(() => item.classList.add('visible'), (i + 1) * 400);
+      });
+    }
+  }, 15000);
+  // Also trigger fade-in for first slide
+  setTimeout(() => {
+    document.querySelectorAll('#slide-1 .fade-item').forEach((item, i) => {
+      setTimeout(() => item.classList.add('visible'), (i + 1) * 400);
+    });
+  }, 300);
+</script>
+</body>
+</html>
