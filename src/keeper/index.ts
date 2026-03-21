@@ -49,6 +49,7 @@ import {
 import {
   fetchCrossVenueFunding,
   getCrossVenueAdjustment,
+  getOIAdjustment,
   formatCrossVenue,
   VenueFunding,
 } from "./cross-venue-detector";
@@ -416,13 +417,17 @@ async function runRebalance(driftClient: DriftClient): Promise<void> {
       }
     }
 
-    // Cross-venue funding adjustment
+    // Cross-venue funding + OI adjustment
     const crossVenueMap = new Map(latestCrossVenue.map((v) => [v.market, v]));
     const cv = crossVenueMap.get(target.marketName);
     if (cv) {
       const adj = getCrossVenueAdjustment(cv);
       if (Math.abs(adj.adjustment) > 0) {
         entryReason += ` | XV: ${adj.reason}`;
+      }
+      const oiAdj = getOIAdjustment(cv);
+      if (Math.abs(oiAdj.adjustment) > 0) {
+        entryReason += ` | OI: ${oiAdj.reason}`;
       }
     }
 

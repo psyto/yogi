@@ -22,7 +22,14 @@ export interface VenueFunding {
   spread: number;          // Drift - avg CEX (annualized %)
   convergenceSignal: "drift_high" | "drift_low" | "aligned" | "no_data";
   confidence: number;      // 0-100
+  // CEX OI data
+  binanceOI: number;       // Binance open interest (USD)
+  bybitOI: number;         // Bybit open interest (USD)
+  oiSignal: "oi_surge" | "oi_drop" | "stable" | "no_data";
 }
+
+// Track previous OI values for change detection
+const previousOI: Map<string, { binance: number; bybit: number }> = new Map();
 
 // Map Drift market names to CEX symbols
 const DRIFT_TO_CEX: Record<string, { binance: string; bybit: string }> = {
@@ -42,6 +49,13 @@ interface BinancePremiumIndex {
 interface BybitTicker {
   symbol: string;
   fundingRate: string;
+  openInterest: string;
+}
+
+interface BinanceOIResponse {
+  symbol: string;
+  openInterest: string;
+  time: number;
 }
 
 /**
@@ -95,6 +109,103 @@ async function fetchBybitFunding(): Promise<Map<string, number>> {
 }
 
 /**
+ * Fetch Binance open interest for all USDT perps.
+ * Returns map of symbol -> OI in USD.
+ */
+async function fetchBinanceOI(): Promise<Map<string, number>> {
+  const map = new Map<string, number>();
+  try {
+    const symbols = Object.values(DRIFT_TO_CEX).map((v) => v.binance);
+    for (const symbol of symbols) {
+      const res = await fetch(
+        `https://fapi.binance.com/fapi/v1/openInterest?symbol=${symbol}`
+      );
+      if (!res.ok) continue;
+      const data = (await res.json()) as BinanceOIResponse;
+      // OI is in base asset — multiply by price to get USD
+      const priceRes = await fetch(
+        `https://fapi.binance.com/fapi/v1/ticker/price?symbol=${symbol}`
+      );
+      if (priceRes.ok) {
+        const priceData = (await priceRes.json()) as { price: string };
+        const oiUsd = parseFloat(data.openInterest) * parseFloat(priceData.price);
+        map.set(symbol, oiUsd);
+      }
+    }
+  } catch {
+    // Silently fail
+  }
+  return map;
+}
+
+/**
+ * Fetch Bybit open interest.
+ * Returns map of symbol -> OI in USD.
+ */
+async function fetchBybitOI(): Promise<Map<string, number>> {
+  const map = new Map<string, number>();
+  try {
+    const symbols = Object.values(DRIFT_TO_CEX).map((v) => v.bybit);
+    const unique = [...new Set(symbols)];
+
+    for (const symbol of unique) {
+      const res = await fetch(
+        `https://api.bybit.com/v5/market/open-interest?category=linear&symbol=${symbol}&intervalTime=1h&limit=1`
+      );
+      if (!res.ok) continue;
+      const data = (await res.json()) as {
+        result?: { list?: Array<{ openInterest: string }> };
+      };
+      const oi = data.result?.list?.[0];
+      if (oi) {
+        // Bybit returns OI in base asset — get price to convert
+        const tickerRes = await fetch(
+          `https://api.bybit.com/v5/market/tickers?category=linear&symbol=${symbol}`
+        );
+        if (tickerRes.ok) {
+          const tickerData = (await tickerRes.json()) as {
+            result?: { list?: Array<{ lastPrice: string }> };
+          };
+          const price = parseFloat(tickerData.result?.list?.[0]?.lastPrice ?? "0");
+          map.set(symbol, parseFloat(oi.openInterest) * price);
+        }
+      }
+    }
+  } catch {
+    // Silently fail
+  }
+  return map;
+}
+
+/**
+ * Classify OI change signal.
+ */
+function classifyOISignal(
+  market: string,
+  binanceOI: number,
+  bybitOI: number
+): "oi_surge" | "oi_drop" | "stable" | "no_data" {
+  const prev = previousOI.get(market);
+  const totalOI = binanceOI + bybitOI;
+
+  // Store current for next comparison
+  previousOI.set(market, { binance: binanceOI, bybit: bybitOI });
+
+  if (!prev || totalOI === 0) return "no_data";
+
+  const prevTotal = prev.binance + prev.bybit;
+  if (prevTotal === 0) return "no_data";
+
+  const changePct = ((totalOI - prevTotal) / prevTotal) * 100;
+
+  // >10% increase in one cycle (5 min) = surge
+  if (changePct > 10) return "oi_surge";
+  // >10% decrease = drop
+  if (changePct < -10) return "oi_drop";
+  return "stable";
+}
+
+/**
  * Fetch Drift funding rates.
  * Returns map of market name -> 24h annualized rate.
  */
@@ -129,10 +240,12 @@ async function fetchDriftFunding(): Promise<Map<string, number>> {
  * Fetch and compare funding rates across Drift, Binance, and Bybit.
  */
 export async function fetchCrossVenueFunding(): Promise<VenueFunding[]> {
-  const [driftRates, binanceRates, bybitRates] = await Promise.all([
+  const [driftRates, binanceRates, bybitRates, binanceOIMap, bybitOIMap] = await Promise.all([
     fetchDriftFunding(),
     fetchBinanceFunding(),
     fetchBybitFunding(),
+    fetchBinanceOI(),
+    fetchBybitOI(),
   ]);
 
   const results: VenueFunding[] = [];
@@ -191,6 +304,11 @@ export async function fetchCrossVenueFunding(): Promise<VenueFunding[]> {
       }
     }
 
+    // CEX OI data
+    const binanceOI = binanceOIMap.get(cexMapping.binance) ?? 0;
+    const bybitOI = bybitOIMap.get(cexMapping.bybit) ?? 0;
+    const oiSignal = classifyOISignal(market, binanceOI, bybitOI);
+
     results.push({
       market,
       driftRate,
@@ -199,6 +317,9 @@ export async function fetchCrossVenueFunding(): Promise<VenueFunding[]> {
       spread,
       convergenceSignal,
       confidence,
+      binanceOI,
+      bybitOI,
+      oiSignal,
     });
   }
 
@@ -249,6 +370,30 @@ export function getCrossVenueAdjustment(venue: VenueFunding): {
 }
 
 /**
+ * Get OI-based risk adjustment.
+ * CEX OI surge = traders piling in = higher funding ahead (good for shorts).
+ * CEX OI drop = traders exiting = funding may flip (caution).
+ */
+export function getOIAdjustment(venue: VenueFunding): {
+  adjustment: number;
+  reason: string;
+} {
+  if (venue.oiSignal === "oi_surge") {
+    return {
+      adjustment: 0.1,
+      reason: `CEX OI surging ($${((venue.binanceOI + venue.bybitOI) / 1e6).toFixed(1)}M) → more funding ahead`,
+    };
+  }
+  if (venue.oiSignal === "oi_drop") {
+    return {
+      adjustment: -0.2,
+      reason: `CEX OI dropping ($${((venue.binanceOI + venue.bybitOI) / 1e6).toFixed(1)}M) → funding may flip, caution`,
+    };
+  }
+  return { adjustment: 0, reason: "" };
+}
+
+/**
  * Format cross-venue funding comparison for logging.
  */
 export function formatCrossVenue(venues: VenueFunding[]): string {
@@ -260,8 +405,11 @@ export function formatCrossVenue(venues: VenueFunding[]): string {
     const binStr = v.binanceRate !== 0 ? `Bin=${v.binanceRate > 0 ? "+" : ""}${v.binanceRate.toFixed(1)}%` : "Bin=N/A";
     const bybStr = v.bybitRate !== 0 ? `Byb=${v.bybitRate > 0 ? "+" : ""}${v.bybitRate.toFixed(1)}%` : "Byb=N/A";
     const spreadStr = `spread=${v.spread > 0 ? "+" : ""}${v.spread.toFixed(1)}%`;
+    const oiStr = v.binanceOI > 0 || v.bybitOI > 0
+      ? ` | OI: $${((v.binanceOI + v.bybitOI) / 1e6).toFixed(1)}M ${v.oiSignal !== "stable" && v.oiSignal !== "no_data" ? `[${v.oiSignal}]` : ""}`
+      : "";
     lines.push(
-      `  ${v.market}: ${driftStr} | ${binStr} | ${bybStr} | ${spreadStr} → ${v.convergenceSignal} (${v.confidence.toFixed(0)}%)`
+      `  ${v.market}: ${driftStr} | ${binStr} | ${bybStr} | ${spreadStr} → ${v.convergenceSignal} (${v.confidence.toFixed(0)}%)${oiStr}`
     );
   }
   return lines.join("\n");
