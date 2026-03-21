@@ -24,7 +24,7 @@ import {
 import { vaultAddress } from "../config/vault";
 import { getConnection, loadKeypair } from "../utils/helpers";
 
-const DEPOSIT_AMOUNT = new BN(100 * 1e6); // 100 USDC
+const DEPOSIT_AMOUNT = new BN(375 * 1e6); // 375 USDC
 const USDC_MARKET_INDEX = 0;
 
 async function main() {
