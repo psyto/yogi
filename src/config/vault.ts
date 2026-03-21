@@ -154,6 +154,10 @@ export const STRATEGY_CONFIG = {
 
   // Emergency rebalance trigger: min deployment drop to force out-of-cycle rebalance
   emergencyDeploymentDropPct: 30,
+
+  // --- CROSS-VENUE FUNDING (5th signal dimension) ---
+  // Compare Drift funding vs Binance/Bybit to detect convergence opportunities
+  crossVenueSpreadThresholdApy: 5.0, // Minimum APY spread to flag divergence
 };
 
 export let vaultAddress = process.env.VAULT_ADDRESS

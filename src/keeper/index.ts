@@ -46,12 +46,19 @@ import {
   formatRegime,
   DriftRegime,
 } from "./regime-engine";
+import {
+  fetchCrossVenueFunding,
+  getCrossVenueAdjustment,
+  formatCrossVenue,
+  VenueFunding,
+} from "./cross-venue-detector";
 
 // --- Global State ---
 const activePositions: BasisPosition[] = [];
 let peakEquity = 0;
 let currentLeverage: LeverageState | undefined;
 let latestImbalances: MarketImbalance[] = [];
+let latestCrossVenue: VenueFunding[] = [];
 let currentSignals: DriftSignalState = {
   severity: SIGNAL_NONE,
   events: [],
@@ -137,6 +144,16 @@ async function runSignalDetection(): Promise<boolean> {
   try {
     currentSignals = await detectSignals(STRATEGY_CONFIG.monitoredMarkets);
     console.log(formatSignalState(currentSignals));
+
+    // Cross-venue funding comparison (5th signal dimension)
+    try {
+      const crossVenue = await fetchCrossVenueFunding();
+      console.log(formatCrossVenue(crossVenue));
+      // Store for rebalance use
+      latestCrossVenue = crossVenue;
+    } catch (err) {
+      console.error("Cross-venue fetch error:", err);
+    }
 
     // Compute unified regime from vol + signals
     const volRegime = currentLeverage
@@ -396,6 +413,16 @@ async function runRebalance(driftClient: DriftClient): Promise<void> {
         }
         direction = trade.direction;
         entryReason = trade.reason;
+      }
+    }
+
+    // Cross-venue funding adjustment
+    const crossVenueMap = new Map(latestCrossVenue.map((v) => [v.market, v]));
+    const cv = crossVenueMap.get(target.marketName);
+    if (cv) {
+      const adj = getCrossVenueAdjustment(cv);
+      if (Math.abs(adj.adjustment) > 0) {
+        entryReason += ` | XV: ${adj.reason}`;
       }
     }
 
