@@ -4,7 +4,7 @@
 
 Drift's hybrid AMM creates structural inefficiencies (OI imbalance, mark/oracle premium, funding rate skew) that mean-revert predictably. Traditional basis vaults capture these with a composite signal. Yogi adds a second dimension: **forward-looking anomaly detection** that senses market stress before vol-based indicators react.
 
-**Core insight**: Vol-based leverage scaling is reactive — it reduces exposure *after* volatility has already spiked. By then, slippage is high, liquidity is thin, and drawdowns have already occurred. Yogi's signal detector monitors leading indicators (OI shifts, liquidation cascades, funding instability, spread blow-outs) that precede vol spikes, enabling proactive position reduction.
+**Core insight**: Vol-based leverage scaling is reactive — it reduces exposure *after* volatility has already spiked. By then, slippage is high, liquidity is thin, and drawdowns have already occurred. Yogi's signal detector monitors five dimensions — including cross-venue funding comparison against Binance and Bybit — that precede vol spikes, enabling proactive position reduction.
 
 **Revenue sources**: Funding payments + mark/oracle premium convergence + OI rebalancing + lending floor + LST collateral. Five sources active across all market conditions, with deployment scaled by regime intelligence.
 
@@ -84,6 +84,15 @@ Mark/oracle divergence across markets indicates thin liquidity, forced selling, 
 
 - Max absolute mark/oracle spread across monitored markets
 - Thresholds: 0.5% (LOW), 1.5% (HIGH), 3.0% (CRITICAL)
+
+#### 5. Cross-Venue Funding (Drift vs Binance/Bybit)
+
+Compares Drift's funding rate against Binance and Bybit perpetual futures. When Drift funding significantly diverges from CEX funding, it signals either an arbitrage opportunity or impending convergence.
+
+- Fetches real-time funding rates from Binance (`fapi/v1/premiumIndex`) and Bybit (`v5/market/tickers`)
+- Classifies as `drift_high` (Drift > CEX by 5%+ APY), `drift_low` (Drift < CEX), or `aligned`
+- Entry decisions include cross-venue adjustment: `drift_high` confirms SHORT profitability but flags convergence risk; `drift_low` suggests LONG as rates converge
+- No other Drift vault compares funding across venues — this is Yogi's unique 5th dimension
 
 ### Regime Engine Decision Matrix
 
@@ -275,7 +284,7 @@ The 32-day period was **calm** — no HIGH or CRITICAL signals fired. Yogi's adv
 - **Vault infrastructure**: Voltr (Ranger Earn) — deposits, LP shares, fee collection
 - **Trading**: Drift Protocol v2 — perpetual futures execution via delegate model
 - **Keeper**: TypeScript bot on AWS EC2 with pm2 (24/7, auto-restart on reboot)
-- **Signal detection**: 4-dimension anomaly detector with configurable thresholds
+- **Signal detection**: 5-dimension anomaly detector (OI, liquidation, funding vol, spread, cross-venue)
 - **Vol computation**: Parkinson estimator on SOL-PERP hourly candles
 - **Data feed**: Drift Data API — funding rates, market stats, OHLC candles
 - **RPC**: Helius (websocket subscription mode)
@@ -302,7 +311,7 @@ Main Loop (30-second tick)
 1. **Deposit**: User deposits USDC --> Voltr vault (`BFDTTG8n...`) mints LP tokens
 2. **Allocation**: Manager deposits USDC to Drift via Voltr adaptor CPI
 3. **Delegate**: Keeper (manager) has delegate authority on vault's Drift user (`HURzSV...`)
-4. **Signal check**: Keeper runs 4-dimension anomaly detection every 5 minutes
+4. **Signal check**: Keeper runs 5-dimension anomaly detection every 5 minutes (including cross-venue funding vs Binance/Bybit)
 5. **Regime compute**: Vol regime x signal severity --> deployment + leverage
 6. **Cost check**: Keeper evaluates each market's funding vs. trading costs
 7. **Trading**: Keeper places SHORT/LONG perp orders as delegate (size = allocation x deployment% x leverage)

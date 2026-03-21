@@ -34,6 +34,7 @@ User deposits USDC --> Voltr Vault
                                    |   +-- Liquidation cascade (OI drop proxy)
                                    |   +-- Funding rate volatility (regime transition)
                                    |   +-- Spread blow-out (mark/oracle stress)
+                                   |   +-- Cross-venue funding (Drift vs Binance/Bybit)
                                    |   --> Severity: CLEAR / LOW / HIGH / CRITICAL
                                    |
                                    +-- Regime Engine (vol x signal --> deployment)
@@ -52,7 +53,7 @@ User deposits USDC --> Voltr Vault
 
 Traditional basis trade vaults use volatility alone to scale leverage. In a low-vol bear market with building contagion risk, vol-only strategies stay fully deployed at 2x leverage — blind to the approaching storm.
 
-Yogi sees it coming. The signal detector monitors four anomaly dimensions every 5 minutes. When OI shifts rapidly, spreads blow out, or funding volatility spikes, Yogi reduces deployment and leverage *before* the vol regime catches up. When signals clear, Yogi scales back up.
+Yogi sees it coming. The signal detector monitors **five dimensions** every 5 minutes — including cross-venue funding comparison against Binance and Bybit. When OI shifts rapidly, spreads blow out, funding volatility spikes, or Drift funding diverges from CEX, Yogi adapts deployment and leverage *before* the vol regime catches up. When signals clear, Yogi scales back up.
 
 | Scenario | Vol-Only Baseline | Yogi |
 |----------|-------------------|------|
@@ -80,6 +81,7 @@ Yogi sees it coming. The signal detector monitors four anomaly dimensions every 
 | Module | File | Purpose |
 |--------|------|---------|
 | Signal Detector | `src/keeper/drift-signal-detector.ts` | 4-dimension Drift anomaly detection (OI shift, liquidation, funding vol, spread) |
+| Cross-Venue Detector | `src/keeper/cross-venue-detector.ts` | 5th dimension: compares Drift funding vs Binance/Bybit for convergence signals |
 | Regime Engine | `src/keeper/regime-engine.ts` | Vol x signal severity --> deployment % and leverage cap |
 | Imbalance Detector | `src/keeper/imbalance-detector.ts` | Reads OI, mark/oracle spread, funding — computes composite signal and direction |
 | Yield Stacker | `src/keeper/yield-stacker.ts` | Multi-protocol lending optimization, LST yield, transparent APY breakdown |
@@ -87,8 +89,8 @@ Yogi sees it coming. The signal detector monitors four anomaly dimensions every 
 | Cost Calculator | `src/keeper/cost-calculator.ts` | Maker fee model — 1.6 bps round-trip cost |
 | Leverage Controller | `src/keeper/leverage-controller.ts` | Dynamic leverage scaling by vol regime |
 | Health Monitor | `src/keeper/health-monitor.ts` | 30-second health ratio and drawdown checks |
-| Position Manager | `src/keeper/position-manager.ts` | Bidirectional position management with maker orders |
-| Keeper Loop | `src/keeper/index.ts` | Main event loop — signals, regime, imbalance, rebalance |
+| Position Manager | `src/keeper/position-manager.ts` | Bidirectional position management with market orders |
+| Keeper Loop | `src/keeper/index.ts` | Main event loop — signals, regime, cross-venue, imbalance, rebalance |
 | Config | `src/config/` | Strategy parameters, signal thresholds, deployment matrices |
 
 ## Regime Engine
@@ -115,6 +117,16 @@ Key design principle: **signals can only reduce deployment, never increase it.**
 | Liquidation Cascade (OI drop) | 5% in 1h | 15% | 30% |
 | Funding Rate Volatility | 500 bps annualized | 1500 bps | 3000 bps |
 | Spread Blow-out (mark/oracle) | 0.5% | 1.5% | 3.0% |
+
+**5th Dimension — Cross-Venue Funding:**
+
+| Signal | Condition | Entry Adjustment |
+|--------|-----------|-----------------|
+| `drift_high` | Drift funding > CEX by 5%+ APY | SHORT profitable but flag convergence risk |
+| `drift_low` | Drift funding < CEX by 5%+ APY | Potential LONG as Drift converges up |
+| `aligned` | Drift ≈ CEX (within 5% APY) | High confidence — strengthen base signal |
+
+Cross-venue data is fetched from Binance and Bybit funding rate APIs every 5 minutes. No other Drift vault compares funding across venues to optimize entry timing.
 
 All thresholds are configurable in `STRATEGY_CONFIG` without recompilation.
 
