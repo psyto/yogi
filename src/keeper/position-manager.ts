@@ -198,14 +198,21 @@ export function shouldExitPosition(
   position: BasisPosition,
   currentFundingRate: number
 ): { exit: boolean; reason: string } {
-  const { exitFundingBps, maxDrawdownPct } = STRATEGY_CONFIG;
+  const { exitFundingBps } = STRATEGY_CONFIG;
   const exitThreshold = exitFundingBps / 10000;
 
-  // Exit if funding turned negative
-  if (currentFundingRate < exitThreshold) {
+  // For SHORT positions: exit if funding turned negative (short is PAYING, not collecting)
+  if (position.direction === "short" && currentFundingRate < 0) {
     return {
       exit: true,
-      reason: `Funding rate ${(currentFundingRate * 100).toFixed(4)}% below exit threshold`,
+      reason: `SHORT paying funding: rate ${(currentFundingRate * 24 * 365 * 100).toFixed(1)}% APY`,
+    };
+  }
+  // For LONG positions: exit if funding turned positive (long is PAYING, not collecting)
+  if (position.direction === "long" && currentFundingRate > 0) {
+    return {
+      exit: true,
+      reason: `LONG paying funding: rate +${(currentFundingRate * 24 * 365 * 100).toFixed(1)}% APY`,
     };
   }
 
