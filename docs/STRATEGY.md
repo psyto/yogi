@@ -10,7 +10,7 @@ Drift's hybrid AMM creates structural inefficiencies (OI imbalance, mark/oracle 
 
 **Proven in live bear market (Mar 20–23, 2026):** BTC dropped 7.4%. Yogi delivered +$8.08 (+1.61%) with zero drawdown. The regime engine held cautious deployment (50% @ 0.5x) while other strategies would have been fully exposed.
 
-**Revenue sources**: Funding payments + mark/oracle premium convergence + OI rebalancing + lending floor + LST collateral. Five sources active across all market conditions, with deployment scaled by regime intelligence.
+**Revenue sources (live)**: Funding payments + mark/oracle premium convergence + OI rebalancing + cross-venue intelligence. Four sources active now. Lending floor (Kamino/Marginfi) and LST collateral (jitoSOL) are designed and planned for post-hackathon implementation.
 
 ## How It Works
 
