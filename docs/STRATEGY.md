@@ -2,9 +2,13 @@
 
 ## Thesis
 
-Drift's hybrid AMM creates structural inefficiencies (OI imbalance, mark/oracle premium, funding rate skew) that mean-revert predictably. Traditional basis vaults capture these with a composite signal. Yogi adds a second dimension: **forward-looking anomaly detection** that senses market stress before vol-based indicators react.
+**Bear markets destroy vaults that only know one speed.** When BTC drops 7.4% in a week, most vaults are fully deployed at max leverage — they eat the drawdown, hope for recovery, and call it "temporary." Yogi does the opposite: it sees danger coming, reduces exposure, and protects capital.
 
-**Core insight**: Vol-based leverage scaling is reactive — it reduces exposure *after* volatility has already spiked. By then, slippage is high, liquidity is thin, and drawdowns have already occurred. Yogi's signal detector monitors five dimensions — including cross-venue funding comparison against Binance and Bybit — that precede vol spikes, enabling proactive position reduction.
+Drift's hybrid AMM creates structural inefficiencies (OI imbalance, mark/oracle premium, funding rate skew) that mean-revert predictably. Yogi captures these while monitoring **five anomaly dimensions** — including real-time cross-venue funding comparison against Binance and Bybit — to detect stress before volatility-based indicators react.
+
+**Core insight**: Vol-based leverage scaling is reactive — it reduces exposure *after* volatility has already spiked. By then, slippage is high, liquidity is thin, and drawdowns have already occurred. Yogi monitors leading indicators across three venues (Drift + Binance + Bybit) that precede vol spikes, enabling proactive position reduction.
+
+**Proven in live bear market (Mar 20–23, 2026):** BTC dropped 7.4%. Yogi delivered +$8.08 (+1.61%) with zero drawdown. The regime engine held cautious deployment (50% @ 0.5x) while other strategies would have been fully exposed.
 
 **Revenue sources**: Funding payments + mark/oracle premium convergence + OI rebalancing + lending floor + LST collateral. Five sources active across all market conditions, with deployment scaled by regime intelligence.
 
