@@ -492,6 +492,65 @@ async function main(): Promise<void> {
     console.error("Failed to cancel stale orders:", e);
   }
 
+  // Load existing on-chain positions to prevent duplicate stacking after restart
+  try {
+    console.log("--- Loading Existing On-Chain Positions ---");
+    const user = driftClient.getUser();
+    const perpPositions = user.getActivePerpPositions();
+
+    if (perpPositions.length > 0) {
+      for (const pos of perpPositions) {
+        const baseAmount = pos.baseAssetAmount.toNumber() / 1e9;
+        if (Math.abs(baseAmount) < 0.0001) continue;
+
+        const direction: "short" | "long" = baseAmount < 0 ? "short" : "long";
+        const marketIndex = pos.marketIndex;
+
+        // Get market name from allowed markets
+        const marketName = STRATEGY_CONFIG.allowedMarkets.find((_m: string, _i: number) => {
+          // Try to match by checking the perp market account
+          try {
+            const market = driftClient.getPerpMarketAccount(marketIndex);
+            if (market) {
+              const name = Buffer.from(market.name).toString().trim();
+              return STRATEGY_CONFIG.allowedMarkets.includes(name);
+            }
+          } catch { /* ignore */ }
+          return false;
+        }) || `market-${marketIndex}`;
+
+        // Get actual market name from Drift
+        let resolvedName = `market-${marketIndex}`;
+        try {
+          const market = driftClient.getPerpMarketAccount(marketIndex);
+          if (market) {
+            resolvedName = Buffer.from(market.name).toString().trim();
+          }
+        } catch { /* ignore */ }
+
+        const oracle = driftClient.getOracleDataForPerpMarket(marketIndex);
+        const price = oracle.price.toNumber() / 1e6;
+        const sizeUsd = Math.abs(baseAmount) * price;
+
+        activePositions.push({
+          marketIndex,
+          marketName: resolvedName,
+          direction,
+          sizeUsd,
+          entryFundingRate: 0,
+          entryTimestamp: Date.now(),
+        });
+
+        console.log(`  Restored: ${resolvedName} ${direction} $${sizeUsd.toFixed(2)} (${Math.abs(baseAmount).toFixed(6)} base)`);
+      }
+      console.log(`  Loaded ${activePositions.length} existing positions.\n`);
+    } else {
+      console.log("  No existing positions found.\n");
+    }
+  } catch (e) {
+    console.error("Warning: Failed to load existing positions:", e);
+  }
+
   // Initialize all systems
   await updateLeverage();
   await runSignalDetection();
