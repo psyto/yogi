@@ -11,6 +11,7 @@ import { DRIFT_PROGRAM_ID } from "../config/constants";
 import {
   fetchAllFundingRates,
   rankMarketsByFunding,
+  rankMarketsByNegativeFunding,
   FundingRateData,
 } from "./funding-scanner";
 import {
@@ -316,6 +317,20 @@ async function runFundingScan(driftClient: DriftClient): Promise<void> {
       `  ${i + 1}. ${m.market}: ${m.annualizedPct.toFixed(2)}% APY (net: ${econ.netProfitBps.toFixed(1)} bps/day, break-even: ${econ.breakEvenHours.toFixed(0)}h)`
     );
   });
+
+  // Also show negative funding markets (LONG candidates)
+  const negativeRanked = rankMarketsByNegativeFunding(
+    rates,
+    STRATEGY_CONFIG.minAnnualizedFundingBps
+  );
+  if (negativeRanked.length > 0) {
+    console.log(`  --- Negative funding (LONG candidates): ${negativeRanked.length} markets ---`);
+    negativeRanked.slice(0, 5).forEach((m, i) => {
+      console.log(
+        `  ${i + 1}. ${m.market}: ${m.annualizedPct.toFixed(2)}% APY -> LONG collects ${Math.abs(m.annualizedPct).toFixed(2)}%`
+      );
+    });
+  }
 }
 
 async function runRebalance(driftClient: DriftClient): Promise<void> {
@@ -462,6 +477,54 @@ async function runRebalance(driftClient: DriftClient): Promise<void> {
       });
     } catch (err) {
       console.error(`Failed to open position on ${target.marketName}:`, err);
+    }
+  }
+
+  // --- BIDIRECTIONAL: Open LONG positions on markets with deeply negative funding ---
+  const negativeRanked = rankMarketsByNegativeFunding(
+    rates,
+    STRATEGY_CONFIG.minAnnualizedFundingBps
+  ).filter((m) => passesCostGate(Math.abs(m.annualizedPct) * 100));
+
+  const activeMarketsAfterShorts = new Set(activePositions.map((p) => p.marketIndex));
+  const maxTotalPositions = STRATEGY_CONFIG.maxMarketsSimultaneous * 2; // Allow shorts + longs
+
+  for (const longMarket of negativeRanked) {
+    if (activePositions.length >= maxTotalPositions) break;
+    if (activeMarketsAfterShorts.has(longMarket.marketIndex)) continue;
+
+    // Calculate remaining capital for longs
+    const usedCapital = activePositions.reduce((s, p) => s + p.sizeUsd, 0);
+    const remainingBasis = Math.max(0, (deployableEquity * 0.70) - usedCapital);
+    if (remainingBasis < 1) break;
+
+    const longSizeUsd = Math.min(
+      remainingBasis / Math.max(1, negativeRanked.length - negativeRanked.indexOf(longMarket)),
+      deployableEquity * (STRATEGY_CONFIG.maxPositionPctPerMarket / 100)
+    ) * effectiveLeverage;
+
+    if (longSizeUsd < 1) continue;
+
+    try {
+      const entryReason = `funding ${longMarket.annualizedPct.toFixed(1)}% -> LONG (collecting negative funding)`;
+      console.log(`  Opening LONG ${longMarket.market}: ${entryReason} | $${longSizeUsd.toFixed(2)}`);
+      await openBasisPosition(
+        driftClient,
+        longMarket.marketIndex,
+        longSizeUsd,
+        "long"
+      );
+
+      activePositions.push({
+        marketIndex: longMarket.marketIndex,
+        marketName: longMarket.market,
+        direction: "long",
+        sizeUsd: longSizeUsd,
+        entryFundingRate: longMarket.rate24h,
+        entryTimestamp: Date.now(),
+      });
+    } catch (err) {
+      console.error(`Failed to open LONG on ${longMarket.market}:`, err);
     }
   }
 }

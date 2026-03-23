@@ -89,6 +89,40 @@ export function rankMarketsByFunding(
     });
 }
 
+/**
+ * Rank markets by NEGATIVE funding (for LONG positions).
+ * When funding is deeply negative, longs COLLECT funding.
+ * Mirror logic of rankMarketsByFunding but for the opposite direction.
+ */
+export function rankMarketsByNegativeFunding(
+  rates: FundingRateData[],
+  minAnnualizedBps: number
+): FundingRateData[] {
+  const minPct = minAnnualizedBps / 100;
+  const { allowedMarkets, excludeMarkets } = STRATEGY_CONFIG;
+
+  return rates
+    .filter((r) => {
+      if (excludeMarkets.length > 0 && excludeMarkets.includes(r.market)) {
+        return false;
+      }
+      if (allowedMarkets.length > 0 && !allowedMarkets.includes(r.market)) {
+        return false;
+      }
+
+      // Only consider markets with strongly negative funding
+      const negativeTimeframes = [r.rate24h, r.rate7d, r.rate30d].filter(
+        (rate) => rate < 0
+      ).length;
+      // annualizedPct is negative for these — use absolute value
+      return negativeTimeframes >= 2 && Math.abs(r.annualizedPct) >= minPct;
+    })
+    .sort((a, b) => {
+      // Sort by most negative (largest absolute value first)
+      return Math.abs(b.annualizedPct) - Math.abs(a.annualizedPct);
+    });
+}
+
 export async function fetchMarketFundingHistory(
   market: string,
   limit = 168
