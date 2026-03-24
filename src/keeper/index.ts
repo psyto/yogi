@@ -97,7 +97,7 @@ async function initDriftClient(
     skipLoadUsers: false,
     // Load all perp and spot markets so we can place orders on any market
     perpMarketIndexes: [0, 1, 2, 3, 7, 9, 22], // SOL, BTC, ETH, APT, DOGE, SUI, AVAX
-    spotMarketIndexes: [0, 1], // USDC, SOL
+    spotMarketIndexes: [0, 1, 2, 3, 5], // USDC, SOL, BTC, ETH, USDT
   });
 
   console.log("Subscribing to Drift...");
