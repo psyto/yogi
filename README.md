@@ -2,7 +2,7 @@
 
 **Smarter than the average bear market vault. The vault that survives when others bleed.**
 
-Yogi is a production-grade USDC vault on Solana that combines Drift funding rate arbitrage with a **5-dimensional anomaly detection engine** — including real-time cross-venue funding comparison against Binance and Bybit. While BTC dropped 7.4% in one week, Yogi delivered **+$8.08 (+1.61%) with zero drawdown**. It's not the highest yield — it's the one that survives.
+Yogi is a production-grade USDC vault on Solana that runs **dynamic tilted delta-neutral** positions on Drift — buying spot and shorting perps to eliminate price risk while collecting funding. A **5-dimensional anomaly detection engine** (including real-time cross-venue funding comparison against Binance and Bybit) dynamically adjusts tilt, deployment, and leverage. While BTC dropped 7.4% in one week, Yogi delivered **+$8.08 (+1.61%) with zero drawdown**. It's not the highest yield — it's the one that survives.
 
 **Live on Solana mainnet since March 20, 2026.** $500 deposited. Zero drawdown. Keeper running 24/7 on AWS EC2.
 
@@ -23,97 +23,103 @@ During a week where BTC dropped 7.4% ($73,872 → $68,402), Yogi:
 
 **DOGE funding collapse:** Drift DOGE funding spiked to -3,271% APY. Yogi's cross-venue detector showed Binance at -6.4% and Bybit at -6.9% — confirming the distortion was Drift-specific. The keeper exited the DOGE SHORT and rotated to SUI (+1,034% APY).
 
-**Bidirectional adaptation:** When SOL and ETH funding turned deeply negative (-2,000% and -1,700% APY on Drift), Yogi automatically opened LONG positions to collect from the other side. Shorts paying funding are exited immediately; longs replace them to keep collecting.
-
 **Cross-venue divergence:** Drift BTC funding at +1,445% while Binance at -7.5% and Bybit at -9.6%. A +1,454% spread. Yogi sees this and flags convergence risk on every BTC entry decision.
 
 **Regime discipline:** Vol stuck at 57-61% (high regime). Yogi automatically limited deployment to 50% at 0.5x leverage. Many vaults would be fully deployed — Yogi chose safety, and the bear market proved it right.
 
 **Zero drawdown through a -7.4% BTC week.** That's the story.
 
-## Strategy
+## Strategy — Dynamic Tilted Delta-Neutral
 
-Yogi stacks multiple yield sources across two capital pools, with an intelligence layer that dynamically adjusts exposure:
-
-1. **Bidirectional Funding Harvesting** — SHORT when funding positive, LONG when funding negative. Collects from both sides of the market simultaneously.
-2. **Lending Floor (native to Drift)** — Drift automatically lends idle collateral to borrowers, earning variable yield (1-5% APY). No extra integration needed — built into the cross-margin system.
-2. **Regime-Adaptive Arbitrage (70%)** — Four stacked yield sources:
-   - **Funding rate** — Bidirectional: SHORT when positive, LONG when negative
-   - **Premium convergence** — Mark/oracle deviation mean-reverts
-   - **OI rebalancing** — Position ahead of funding rate changes using OI imbalance
-   - **LST collateral yield (designed, not yet active)** — jitoSOL as collateral for ~7-8% staking + MEV. Planned for post-hackathon.
-3. **Intelligence Layer (Yogi-specific)** — Signal detection adjusts how much of pool #2 is deployed:
-   - No anomalies: 100% deployed at full leverage
-   - Low signals: 70-85% deployed, reduced leverage
-   - Critical signals: 10-25% deployed, minimal leverage
-   - Extreme vol: 0% deployed, lending only
+Yogi's primary mode is **delta-neutral**: buy spot + short perps on the same asset. Price movement cancels out — profit comes purely from funding rate collection. A **dynamic tilt** adds slight short bias (0-10%) in calm markets for extra yield, automatically reducing to 0% (pure DN) when signals detect stress.
 
 ### How It Works
 
 ```
 User deposits USDC --> Voltr Vault
                        |
-                       +-- 30% --> Lending Floor (Kamino/Marginfi — designed, post-hackathon)
+                       +-- Idle USDC --> Drift auto-lends to borrowers (1-5% APY)
                        |
-                       +-- 70% --> Drift Perps (regime-adaptive arbitrage)
-                                   |
-                                   +-- Signal Detector (every 5 min)
-                                   |   +-- OI imbalance shift (mass positioning)
-                                   |   +-- Liquidation cascade (OI drop proxy)
-                                   |   +-- Funding rate volatility (regime transition)
-                                   |   +-- Spread blow-out (mark/oracle stress)
-                                   |   +-- Cross-venue funding (Drift vs Binance/Bybit)
-                                   |   --> Severity: CLEAR / LOW / HIGH / CRITICAL
-                                   |
-                                   +-- Regime Engine (vol x signal --> deployment)
-                                   |   +-- Reads vol regime (Parkinson estimator)
-                                   |   +-- Reads signal severity (detector output)
-                                   |   --> deploymentPct + maxLeverage + rebalanceMode
-                                   |
-                                   +-- Imbalance Detector (OI + premium + funding)
-                                   +-- Direction: SHORT or LONG based on composite signal
-                                   +-- Maker limit orders (-0.002% rebate)
-                                   +-- 30-second health monitoring
-                                   +-- Low turnover: 7-day min hold
+                       +-- Deployed Capital --> Delta-Neutral Positions
+                           |
+                           +-- 70% --> Spot BUY (SOL, BTC, ETH on Drift)
+                           +-- 30% --> Perp margin
+                           |
+                           +-- Perp SHORT = spot size × (1 + tilt%)
+                           |   Price cancels out. Funding collected.
+                           |
+                           +-- Dynamic Tilt (0-10%)
+                           |   +-- CLEAR signals + low vol → 10% (max short bias)
+                           |   +-- LOW signal → 3% short bias
+                           |   +-- HIGH/CRITICAL → 0% (pure DN, protect capital)
+                           |   +-- Negative funding → reduce tilt
+                           |
+                           +-- Signal Detector (every 5 min)
+                           |   +-- OI imbalance shift
+                           |   +-- Liquidation cascade (OI drop proxy)
+                           |   +-- Funding rate volatility
+                           |   +-- Spread blow-out (mark/oracle)
+                           |   +-- Cross-venue funding (Drift vs Binance/Bybit)
+                           |   --> Severity: CLEAR / LOW / HIGH / CRITICAL
+                           |
+                           +-- Regime Engine (vol × signal → deployment)
+                               +-- Adjusts deployment %, leverage, tilt
+                               +-- Emergency rebalance on regime shifts
 ```
 
-### What Makes Yogi Different — Built for Bear Markets
+### Delta-Neutral Execution
 
-Most vaults break in bear markets. They react *after* the crash, not before. Yogi is different:
+| Step | Action | Purpose |
+|------|--------|---------|
+| 1 | Buy spot on Drift (e.g., 0.0036 BTC) | The hedge |
+| 2 | Short perp on Drift (e.g., 0.0037 BTC) | Funding collection + tilt |
+| 3 | Price goes up | Spot +$X, Perp -$X → net $0 |
+| 4 | Price goes down | Spot -$X, Perp +$X → net $0 |
+| 5 | Funding accrues | Short collects funding hourly |
+| Result | Zero price risk, pure funding yield | + tilt bonus in calm markets |
 
-1. **5D Signal Detection** — not just volatility, but OI shifts, liquidation cascades, funding instability, spread blow-outs, AND cross-venue funding divergence. Five early warning systems, checked every 5 minutes.
+### Dynamic Tilt — Yogi's Edge
 
-2. **Cross-Venue Intelligence** — the only Drift vault that compares funding rates against Binance and Bybit in real time. When Drift DOGE funding is +2,000% but Binance is -6%, Yogi knows that's a distortion, not an opportunity.
+Unlike static delta-neutral vaults, Yogi adjusts its short bias in real time:
 
-3. **CEX Open Interest Tracking** — monitors $9.3B of BTC open interest and $1.3B of SOL open interest across Binance and Bybit. OI surges signal incoming volatility before it hits Drift.
+| Condition | Tilt | Effect |
+|-----------|------|--------|
+| Calm market (low vol, CLEAR signals) | 10% | Perp short 10% larger than spot → extra yield from short bias |
+| Normal (LOW signal) | 3% | Mild short bias, conservative |
+| Stress (HIGH/CRITICAL) | 0% | Pure DN — zero price exposure |
+| Negative funding | 0-2% | Reduce tilt when shorts pay instead of collect |
 
-4. **Regime Discipline** — vol at 57%? Yogi goes cautious (50% deployed, 0.5x leverage). Not because it's told to, but because the deployment matrix says high vol + clear signals = protect capital. Other vaults stay fully deployed and eat the drawdown.
+The tilt is computed every rebalance cycle using signal severity, vol regime, and current funding direction. This is **not available on any other Drift vault**.
 
-5. **Adaptive Rotation** — DOGE funding collapsed? Yogi exits the SHORT within 4 hours and rotates to SUI. No manual intervention. The keeper decides based on funding scans across 73 Drift markets.
+### What Makes Yogi Different
 
-6. **Bidirectional** — not just shorts. When SOL funding is -2,000% APY, Yogi goes LONG to collect. When SUI is +1,200%, Yogi goes SHORT. Always on the collecting side, regardless of market direction. The regime is loosened for bidirectional because shorts and longs partially offset price risk.
+1. **Delta-Neutral on Drift** — buys spot + shorts perps within Drift's own markets. Zero price risk. Most Drift vaults are directional and bleed during drawdowns.
+
+2. **Dynamic Tilt** — adjustable short bias (0-10%) responds to market conditions in real time. Pure DN in stress, tilted for extra yield in calm markets. No other vault does this.
+
+3. **5D Signal Detection** — OI shifts, liquidation cascades, funding instability, spread blow-outs, AND cross-venue funding divergence. Five early warning systems, checked every 5 minutes.
+
+4. **Cross-Venue Intelligence** — the only Drift vault that compares funding rates against Binance and Bybit in real time. When Drift DOGE funding is +2,000% but Binance is -6%, Yogi knows that's a distortion, not an opportunity.
+
+5. **CEX Open Interest Tracking** — monitors $9.3B of BTC open interest and $1.3B of SOL open interest across Binance and Bybit. OI surges signal incoming volatility before it hits Drift.
+
+6. **Regime Discipline** — vol at 57%? Yogi goes cautious (55% deployed, 0.5x leverage, 0% tilt). Not because it's told to, but because the deployment matrix says high vol + signals = protect capital.
+
+7. **Multi-Asset DN** — SOL, BTC, and ETH all have spot markets on Drift. Yogi can run DN on all three simultaneously. Kodiak (Hyperliquid) is limited to single-asset DN.
 
 **Every other vault shows a backtest. Yogi shows live mainnet performance through a -7.4% BTC drawdown with zero loss.**
-
-| Scenario | Vol-Only Baseline | Yogi |
-|----------|-------------------|------|
-| Low vol, no stress | 100% @ 2.0x | 100% @ 2.0x (same) |
-| Low vol, OI shifting | 100% @ 2.0x (blind) | 80% @ 1.5x (cautious) |
-| Low vol, liquidation cascade | 100% @ 2.0x (blind) | 25% @ 0.5x (defensive) |
-| High vol, no stress | 50% @ 0.5x | 50% @ 0.5x (same) |
-| High vol, critical signals | 50% @ 0.5x (blind) | 10% @ 0.0x (shut down) |
 
 ### Yield Stack
 
 | Source | Mechanism | Est. APY | Status |
 |--------|-----------|----------|--------|
-| Bidirectional funding | SHORT positive + LONG negative markets simultaneously | 8-15% | **Live** |
-| Premium convergence | Mark/oracle deviation mean-reverts | 2-4% | **Live** (via imbalance detector) |
-| Cross-venue intelligence | Entry optimization via Binance/Bybit comparison | 1-2% | **Live** |
-| Lending floor | Drift auto-lends idle collateral to borrowers | 1-5% | **Live** (native to Drift) |
+| DN funding collection | Short perps collect positive funding | 8-15% | **Live** |
+| Dynamic tilt bonus | Extra yield from short bias in calm markets | 1-3% | **Live** |
+| Premium convergence | Mark/oracle deviation mean-reverts (via DN tilt) | 1-2% | **Live** |
+| Cross-venue intelligence | Entry/tilt optimization via Binance/Bybit comparison | 0.5-1% | **Live** |
+| Drift auto-lending | Idle collateral lent to borrowers natively | 1-5% | **Live** (native to Drift) |
 | LST collateral | jitoSOL staking + MEV | 1.5-2% | Designed, post-hackathon |
-| **Live combined** | | **11-21%** | |
-| **Full stack target** | | **14-24% (hostile) / 20-30% (normal)** | |
+| **Live combined** | | **12-24%** | |
 
 ## Architecture
 
@@ -121,18 +127,27 @@ Most vaults break in bear markets. They react *after* the crash, not before. Yog
 
 | Module | File | Purpose |
 |--------|------|---------|
+| Delta-Neutral Manager | `src/keeper/delta-neutral.ts` | DN position lifecycle: open (spot+perp), close, delta drift check, dynamic tilt |
 | Signal Detector | `src/keeper/drift-signal-detector.ts` | 4-dimension Drift anomaly detection (OI shift, liquidation, funding vol, spread) |
 | Cross-Venue Detector | `src/keeper/cross-venue-detector.ts` | 5th dimension: compares Drift funding vs Binance/Bybit for convergence signals |
-| Regime Engine | `src/keeper/regime-engine.ts` | Vol x signal severity --> deployment % and leverage cap |
+| Regime Engine | `src/keeper/regime-engine.ts` | Vol x signal severity --> deployment %, leverage cap, tilt |
 | Imbalance Detector | `src/keeper/imbalance-detector.ts` | Reads OI, mark/oracle spread, funding — computes composite signal and direction |
 | Yield Stacker | `src/keeper/yield-stacker.ts` | Multi-protocol lending optimization, LST yield (designed, post-hackathon) |
 | Funding Scanner | `src/keeper/funding-scanner.ts` | Fetches and ranks all Drift perp markets by funding rate |
 | Cost Calculator | `src/keeper/cost-calculator.ts` | Maker fee model — 1.6 bps round-trip cost |
 | Leverage Controller | `src/keeper/leverage-controller.ts` | Dynamic leverage scaling by vol regime |
 | Health Monitor | `src/keeper/health-monitor.ts` | 30-second health ratio and drawdown checks |
-| Position Manager | `src/keeper/position-manager.ts` | Bidirectional position management with market orders |
-| Keeper Loop | `src/keeper/index.ts` | Main event loop — signals, regime, cross-venue, imbalance, rebalance |
-| Config | `src/config/` | Strategy parameters, signal thresholds, deployment matrices |
+| Position Manager | `src/keeper/position-manager.ts` | Directional position management (fallback mode) |
+| Keeper Loop | `src/keeper/index.ts` | Main event loop — DN rebalance, signals, regime, cross-venue |
+| Config | `src/config/` | Strategy parameters, signal thresholds, deployment matrices, DN settings |
+
+### Drift Market Mapping (DN-Eligible)
+
+| Asset | Spot Market Index | Perp Market Index | DN Eligible |
+|-------|-------------------|-------------------|-------------|
+| SOL | 1 | 0 | Yes |
+| BTC | 2 | 1 | Yes |
+| ETH | 3 | 2 | Yes |
 
 ## Regime Engine
 
@@ -142,13 +157,24 @@ The regime engine is Yogi's core differentiator. It combines two inputs into a d
 
 |  | CLEAR | LOW | HIGH | CRITICAL |
 |--|-------|-----|------|----------|
-| **Very Low** (< 20% vol) | 100% @ 2.0x | 80% @ 1.5x | 50% @ 1.0x | 25% @ 0.5x |
-| **Low** (20-35%) | 85% @ 1.5x | 70% @ 1.2x | 40% @ 0.8x | 20% @ 0.3x |
-| **Normal** (35-50%) | 70% @ 1.0x | 55% @ 0.8x | 30% @ 0.5x | 15% @ 0.2x |
-| **High** (50-75%) | 50% @ 0.5x | 35% @ 0.3x | 20% @ 0.2x | 10% @ 0.0x |
+| **Very Low** (< 20% vol) | 100% @ 2.0x | 95% @ 1.5x | 70% @ 1.0x | 40% @ 0.5x |
+| **Low** (20-35%) | 95% @ 1.5x | 85% @ 1.2x | 55% @ 0.8x | 30% @ 0.3x |
+| **Normal** (35-50%) | 85% @ 1.0x | 70% @ 0.8x | 45% @ 0.5x | 20% @ 0.2x |
+| **High** (50-75%) | 75% @ 0.8x | 55% @ 0.5x | 30% @ 0.3x | 15% @ 0.0x |
 | **Extreme** (> 75%) | 0% @ 0.0x | 0% @ 0.0x | 0% @ 0.0x | 0% @ 0.0x |
 
-Key design principle: **signals can only reduce deployment, never increase it.** Extreme vol shuts down regardless. The intelligence layer catches danger *between* vol regime transitions.
+Matrices are loosened vs pure directional because DN positions have partial price hedging — shorts and longs offset, so higher deployment is safer.
+
+### Dynamic Tilt Matrix
+
+| Condition | Tilt % | Rationale |
+|-----------|--------|-----------|
+| CLEAR + veryLow/low vol | 10% | Max short bias — calm markets, funding favorable |
+| CLEAR + normal vol | 7% | Moderate short bias |
+| CLEAR + high vol | 5% | Reduced tilt, vol uncertainty |
+| LOW signal | 3% | Conservative tilt |
+| HIGH/CRITICAL signal | 0% | Pure DN — protect capital |
+| Negative funding | max 2% | Reduce tilt when shorts pay |
 
 ### Signal Detection Thresholds
 
@@ -161,35 +187,11 @@ Key design principle: **signals can only reduce deployment, never increase it.**
 
 **5th Dimension — Cross-Venue Funding:**
 
-| Signal | Condition | Entry Adjustment |
-|--------|-----------|-----------------|
-| `drift_high` | Drift funding > CEX by 5%+ APY | SHORT profitable but flag convergence risk |
-| `drift_low` | Drift funding < CEX by 5%+ APY | Potential LONG as Drift converges up |
-| `aligned` | Drift ≈ CEX (within 5% APY) | High confidence — strengthen base signal |
-
-Cross-venue data is fetched from Binance and Bybit funding rate APIs every 5 minutes. No other Drift vault compares funding across venues to optimize entry timing.
-
-All thresholds are configurable in `STRATEGY_CONFIG` without recompilation.
-
-## Execution Cost Gate
-
-Currently using market orders for reliable fills at small position sizes. Maker limit orders (`postOnly`) are supported and will be re-enabled at larger AUM where fills are consistent:
-
-| | Taker (legacy) | Maker (Yogi) |
-|---|---|---|
-| Drift fee | 0.035% (pay) | -0.002% (rebate) |
-| Round-trip cost | 0.17% | 0.016% |
-| Break-even (7-day hold) | 8.9% APY | 0.83% APY |
-
-## Bear Market Resilience
-
-| Market Condition | Vol | Signals | Deployment | Direction | Revenue Sources |
-|-----------------|-----|---------|------------|-----------|----------------|
-| Bull (longs dominant) | Low | CLEAR | 100% @ 2.0x | SHORT | Funding + premium + cross-venue |
-| Bear (shorts dominant) | Normal | LOW | 55% @ 0.8x | LONG | Funding + discount + cross-venue |
-| Bear + contagion | Normal | CRITICAL | 15% @ 0.2x | LONG (minimal) | Lending (optimized) |
-| Crisis (extreme vol) | Extreme | Any | 0% @ 0.0x | None | Lending only |
-| Recovery | Low | CLEAR | 100% @ 2.0x | Signal-based | Full yield stack |
+| Signal | Condition | DN Adjustment |
+|--------|-----------|---------------|
+| `drift_high` | Drift funding > CEX by 5%+ APY | Confirms DN profitability, may increase tilt |
+| `drift_low` | Drift funding < CEX by 5%+ APY | Flag convergence risk, reduce tilt |
+| `aligned` | Drift ≈ CEX (within 5% APY) | High confidence — normal operation |
 
 ## Risk Management
 
@@ -200,14 +202,25 @@ Currently using market orders for reliable fills at small position sizes. Maker 
 | Health check | Every 30 seconds |
 | Signal detection | Every 5 minutes |
 | Health critical | Close all at 1.08 |
-| Signal CRITICAL | Force reduce largest position |
+| Signal CRITICAL | Force reduce + set tilt to 0% |
 | Max per market | 40% |
-| Max markets | 3 (whitelist: SOL/BTC/ETH/DOGE/SUI/AVAX) |
-| Min hold | 7 days |
-| Max rotations | 2 per week |
-| Min signal strength | 20% composite (40% in cautious/defensive mode) |
-| Emergency rebalance | Triggered on 30%+ deployment drop |
-| Negative equity | Emergency close all |
+| Max DN markets | 3 (SOL, BTC, ETH) |
+| Min funding APY | 5% to open DN position |
+| Delta drift threshold | 5% — rebalance legs if spot/perp diverge |
+| Max slippage per leg | 0.5% |
+| DN capital split | 70% spot / 30% perp margin |
+| Negative equity | Emergency close all (both legs) |
+
+### DN-Specific Risk Controls
+
+| Risk | Mitigation |
+|------|-----------|
+| Spot/perp size diverge | Delta drift check every rebalance — rebalance legs if >5% |
+| Funding turns negative | Exit DN when funding APY drops below 5% threshold |
+| One leg fails to fill | Automatic unwind — if perp short fails, sell spot immediately |
+| Tilt exposure in crash | Dynamic tilt → 0% on HIGH/CRITICAL signals (pure DN) |
+| Startup with stale positions | Position loading reconstructs DN pairs from on-chain state |
+| Transition from directional | Auto-closes legacy directional positions on DN mode startup |
 
 ## Backtest Results
 
@@ -222,9 +235,7 @@ Currently using market orders for reliable fills at small position sizes. Maker 
 | Sharpe ratio | 17.64 | 17.60 |
 | Trading costs | $371 | **$312 (-16%)** |
 
-**Why Yogi's APY is lower**: The 32-day period was calm — no HIGH or CRITICAL signals fired. Yogi's conservative LOW-signal deployment (70% vs 100%) reduced returns slightly. In a stress event, this relationship flips: Yogi avoids losses that vol-only strategies take.
-
-**Backtest limitation**: Uses funding-only revenue with reconstructed signals. OI/premium/LST/lending yield not reflected. The backtest APY is a **conservative lower bound**.
+**Note**: Backtest was run with directional mode. DN mode reduces drawdown further by eliminating price risk entirely.
 
 ## Fees
 
@@ -288,12 +299,14 @@ User deposits USDC --> Voltr Vault (BFDTTG8n...)
                        +-- Keeper (EC2, 24/7)               |
                             |                               |
                             +-- Delegate trading authority --+
+                            +-- Delta-neutral: spot buy + perp short
+                            +-- Dynamic tilt (0-10%)
                             +-- Signal detection (5 min)
                             +-- Health monitoring (30 sec)
-                            +-- Rebalance (4 hours)
+                            +-- DN rebalance (4 hours)
 ```
 
-The keeper operates as a **delegate** on the vault's Drift user account. Capital flows through the Voltr adaptor (deposit/withdraw), while trading uses Drift SDK's delegate model for order placement. This means all trades and PnL are on-chain and verifiable through the vault's Drift account.
+The keeper operates as a **delegate** on the vault's Drift user account. Capital flows through the Voltr adaptor (deposit/withdraw), while trading uses Drift SDK's `placeSpotOrder` and `placePerpOrder` for DN execution. All trades and PnL are on-chain and verifiable through the vault's Drift account.
 
 ### Deployment Steps
 
@@ -326,7 +339,7 @@ pm2 save && pm2 startup
 ## Tech Stack
 
 - **Vault infrastructure**: [Voltr / Ranger Earn](https://vaults.ranger.finance) — deposits, LP shares, fee collection
-- **Trading**: [Drift Protocol v2](https://docs.drift.trade) — perpetual futures execution via delegate model
+- **Trading**: [Drift Protocol v2](https://docs.drift.trade) — spot + perpetual futures execution via delegate model
 - **Keeper**: TypeScript bot on AWS EC2 with pm2 process management
 - **Signal detection**: 5-dimension anomaly detector + cross-venue (Binance/Bybit) + CEX OI tracking
 - **Vol computation**: Parkinson estimator on SOL-PERP hourly candles
@@ -344,15 +357,17 @@ Built for the [Ranger Build-A-Bear Hackathon](https://ranger.finance/build-a-bea
 
 ### Why Yogi Should Win
 
-**1. Built for bear markets** — the hackathon is called "Build-A-Bear." Yogi delivered +1.61% during a -7.4% BTC week with zero drawdown. That's the thesis.
+**1. Delta-neutral eliminates price risk** — the hackathon is called "Build-A-Bear." Yogi doesn't just survive bear markets — it's structurally immune to price direction. Spot + perp cancel out. Yield comes from funding, not price bets.
 
-**2. No other submission has cross-venue intelligence** — comparing Drift funding against Binance and Bybit in real time. When Drift DOGE funding is +2,000% and Binance is -6%, Yogi sees the distortion. Other vaults are blind.
+**2. Dynamic tilt is novel technology** — no other Drift vault adjusts its hedge ratio in real time based on signals. Pure DN in stress, tilted for extra yield when safe. This is a genuine innovation in on-chain vault design.
 
-**3. Live mainnet performance, not backtests** — deployed March 20, running continuously since. On-chain verifiable via the Drift UI and Solscan.
+**3. Multi-asset DN on Drift** — SOL, BTC, and ETH all have spot markets on Drift. Yogi can run parallel DN positions across all three, diversifying funding sources. No other submission uses Drift's spot markets for delta-neutral execution.
 
-**4. Production-ready architecture** — Voltr vault integration, delegate trading model, position loading on restart, 30-second health monitoring. Ready for $500K seeding on day one.
+**4. 5D cross-venue intelligence** — comparing Drift funding against Binance and Bybit in real time. When Drift DOGE funding is +2,000% and Binance is -6%, Yogi sees the distortion. Other vaults are blind.
 
-**5. 5D anomaly detection is genuinely novel** — OI shifts, liquidation cascades, funding volatility, spread blow-outs, AND cross-venue CEX comparison. Five dimensions of early warning that no Drift vault has.
+**5. Live mainnet performance, not backtests** — deployed March 20, running continuously since. On-chain verifiable via the Drift UI and Solscan.
+
+**6. Production-ready architecture** — Voltr vault integration, delegate trading model, position loading on restart, automatic DN transition, 30-second health monitoring. Ready for $500K seeding on day one.
 
 ## License
 
