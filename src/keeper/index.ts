@@ -54,9 +54,23 @@ import {
   formatCrossVenue,
   VenueFunding,
 } from "./cross-venue-detector";
+import {
+  DeltaNeutralPosition,
+  DN_MARKET_MAP,
+  openDeltaNeutral,
+  closeDeltaNeutral,
+  checkDeltaDrift,
+  formatDnPosition,
+  loadExistingDnPositions,
+  computeDynamicTilt,
+  getDelta,
+  getDeltaPct,
+  getNotionalUsd,
+} from "./delta-neutral";
 
 // --- Global State ---
 const activePositions: BasisPosition[] = [];
+const dnPositions: DeltaNeutralPosition[] = [];
 let peakEquity = 0;
 let currentLeverage: LeverageState | undefined;
 let latestImbalances: MarketImbalance[] = [];
@@ -217,6 +231,11 @@ async function runEmergencyChecks(driftClient: DriftClient): Promise<boolean> {
 
     if (health.action === "close_all") {
       console.log("EMERGENCY: Closing all positions — health critical");
+      // Close DN positions first
+      for (const pos of [...dnPositions]) {
+        await closeDeltaNeutral(driftClient, pos);
+      }
+      dnPositions.length = 0;
       for (let i = activePositions.length - 1; i >= 0; i--) {
         await closeBasisPosition(driftClient, activePositions[i].marketIndex);
         activePositions.splice(i, 1);
@@ -242,6 +261,10 @@ async function runEmergencyChecks(driftClient: DriftClient): Promise<boolean> {
     driftClient.getUser().getTotalCollateral().toNumber() / 1e6;
   if (equity < 0) {
     console.error(`CRITICAL: Negative equity detected ($${equity.toFixed(2)}) — closing all positions`);
+    for (const pos of [...dnPositions]) {
+      await closeDeltaNeutral(driftClient, pos);
+    }
+    dnPositions.length = 0;
     for (let i = activePositions.length - 1; i >= 0; i--) {
       await closeBasisPosition(driftClient, activePositions[i].marketIndex);
       activePositions.splice(i, 1);
@@ -333,7 +356,158 @@ async function runFundingScan(driftClient: DriftClient): Promise<void> {
   }
 }
 
+/**
+ * DN Rebalance: manage delta-neutral positions (spot buy + perp short).
+ * This is Yogi's primary mode — funding-only profit with dynamic tilt.
+ */
+async function runDnRebalance(driftClient: DriftClient): Promise<void> {
+  console.log("\n--- Rebalance Cycle (DELTA-NEUTRAL) ---");
+
+  const effectiveLeverage = currentRegime
+    ? currentRegime.maxLeverage
+    : currentLeverage?.targetLeverage ?? 0;
+  const deploymentPct = currentRegime?.deploymentPct ?? 100;
+
+  // Close all if regime says zero
+  if (effectiveLeverage === 0 || deploymentPct === 0) {
+    const mode = currentRegime?.rebalanceMode ?? "unknown";
+    console.log(`Regime: ${mode} — closing all DN positions`);
+    for (const pos of [...dnPositions]) {
+      await closeDeltaNeutral(driftClient, pos);
+    }
+    dnPositions.length = 0;
+    // Also close any directional leftovers
+    for (let i = activePositions.length - 1; i >= 0; i--) {
+      await closeBasisPosition(driftClient, activePositions[i].marketIndex);
+      activePositions.splice(i, 1);
+    }
+    return;
+  }
+
+  const user = driftClient.getUser();
+  const totalEquity = user.getTotalCollateral().toNumber() / 1e6;
+  const deployable = totalEquity * (deploymentPct / 100);
+  const mode = currentRegime?.rebalanceMode ?? "unknown";
+
+  console.log(
+    `Equity: $${totalEquity.toFixed(2)} | Deployable: $${deployable.toFixed(2)} (${deploymentPct}%) | ` +
+    `Leverage: ${effectiveLeverage}x | Mode: ${mode}`
+  );
+
+  // 1. Check existing DN positions for exit signals (funding flipped)
+  const rates = await fetchAllFundingRates();
+  const rateMap = new Map(rates.map((r) => [r.market, r]));
+  const dnMinApy = STRATEGY_CONFIG.dnMinFundingApy ?? 5.0;
+
+  for (let i = dnPositions.length - 1; i >= 0; i--) {
+    const pos = dnPositions[i];
+    const marketName = `${pos.coin}-PERP`;
+    const rate = rateMap.get(marketName);
+    if (rate && rate.annualizedPct < dnMinApy) {
+      console.log(
+        `Closing DN ${pos.coin}: funding ${rate.annualizedPct.toFixed(1)}% below ${dnMinApy}% threshold`
+      );
+      await closeDeltaNeutral(driftClient, pos);
+      dnPositions.splice(i, 1);
+    }
+  }
+
+  // 2. Check delta drift on remaining positions
+  for (const pos of dnPositions) {
+    const drift = checkDeltaDrift(pos, driftClient);
+    if (drift.drifted) {
+      console.log(
+        `Delta drift on ${pos.coin}: ${drift.deltaPct.toFixed(1)}% — needs rebalancing`
+      );
+    }
+  }
+
+  // 3. Log existing positions
+  for (const pos of dnPositions) {
+    const oracleData = driftClient.getOracleDataForPerpMarket(pos.perpMarketIndex);
+    const price = oracleData.price.toNumber() / 1e6;
+    console.log(`  Holding: ${formatDnPosition(pos, price)}`);
+  }
+
+  // 4. Find markets eligible for new DN positions
+  const activeDnCoins = new Set(dnPositions.map((p) => p.coin));
+  const eligible = STRATEGY_CONFIG.dnEligibleMarkets ?? ["SOL-PERP", "BTC-PERP", "ETH-PERP"];
+  const maxDnPositions = STRATEGY_CONFIG.maxMarketsSimultaneous ?? 3;
+
+  const ranked = rankMarketsByFunding(rates, STRATEGY_CONFIG.minAnnualizedFundingBps)
+    .filter((m) => {
+      if (!eligible.includes(m.market)) return false;
+      if (!DN_MARKET_MAP[m.market]) return false;
+      if (activeDnCoins.has(m.market.replace("-PERP", ""))) return false;
+      if (m.annualizedPct < dnMinApy) return false;
+      return passesCostGate(m.annualizedPct * 100);
+    });
+
+  const slotsAvailable = maxDnPositions - dnPositions.length;
+  if (slotsAvailable <= 0 || ranked.length === 0) {
+    if (ranked.length === 0 && dnPositions.length === 0) {
+      console.log("No DN-eligible markets above funding threshold");
+    }
+    return;
+  }
+
+  // 5. Calculate capital per new position
+  const capitalInUse = dnPositions.reduce(
+    (sum, p) => sum + getNotionalUsd(p) / 0.70,
+    0
+  );
+  const remainingCapital = Math.max(0, deployable - capitalInUse);
+
+  const newMarkets = ranked.slice(0, slotsAvailable);
+  if (remainingCapital < 10) {
+    console.log(`Insufficient remaining capital: $${remainingCapital.toFixed(2)}`);
+    return;
+  }
+
+  const capitalPerPosition = remainingCapital / newMarkets.length;
+
+  // 6. Open new DN positions with dynamic tilt
+  const volRegime = currentLeverage?.regime ?? "normal";
+  const signalSeverity = currentSignals.severity;
+
+  for (const marketData of newMarkets) {
+    if (capitalPerPosition < 5) {
+      console.log(`Skipping ${marketData.market}: insufficient capital ($${capitalPerPosition.toFixed(2)})`);
+      continue;
+    }
+
+    const dynamicTilt = computeDynamicTilt(
+      signalSeverity,
+      volRegime,
+      marketData.rate24h,
+    );
+
+    console.log(
+      `Opening DN: ${marketData.market} at ${marketData.annualizedPct.toFixed(1)}% APY | ` +
+      `capital: $${capitalPerPosition.toFixed(2)} | tilt: ${(dynamicTilt * 100).toFixed(0)}%`
+    );
+
+    const pos = await openDeltaNeutral(
+      driftClient,
+      marketData.market,
+      capitalPerPosition,
+      dynamicTilt,
+    );
+
+    if (pos) {
+      pos.entryFundingRate = marketData.rate24h;
+      dnPositions.push(pos);
+    }
+  }
+}
+
 async function runRebalance(driftClient: DriftClient): Promise<void> {
+  // Delta-neutral mode
+  if (STRATEGY_CONFIG.deltaNeutralMode) {
+    await runDnRebalance(driftClient);
+    return;
+  }
+
   console.log("\n--- Rebalance Cycle ---");
 
   // YOGI-SPECIFIC: Use regime engine for leverage and deployment
@@ -531,9 +705,14 @@ async function runRebalance(driftClient: DriftClient): Promise<void> {
 
 async function main(): Promise<void> {
   console.log("Yogi Keeper Starting...");
-  console.log("Strategy: Drift basis trade alpha + intelligent signal detection");
-  console.log("Intelligence: OI shift, liquidation cascade, funding vol, spread blow-out");
-  console.log("Regime: Vol regime x signal severity -> adaptive deployment + leverage\n");
+  console.log(`Strategy: ${STRATEGY_CONFIG.deltaNeutralMode ? "Dynamic Tilted Delta-Neutral" : "Directional basis trade"} + intelligent signal detection`);
+  console.log("Intelligence: OI shift, liquidation cascade, funding vol, spread blow-out, cross-venue");
+  console.log("Regime: Vol regime x signal severity -> adaptive deployment + leverage");
+  if (STRATEGY_CONFIG.deltaNeutralMode) {
+    console.log(`DN Mode: spot buy + perp short | tilt 0-${((STRATEGY_CONFIG.dnTiltPct ?? 0.10) * 100).toFixed(0)}% (dynamic)\n`);
+  } else {
+    console.log("");
+  }
 
   const connection = getConnection();
   const managerKeypair = loadKeypair("MANAGER_KEYPAIR_PATH");
@@ -558,57 +737,99 @@ async function main(): Promise<void> {
   // Load existing on-chain positions to prevent duplicate stacking after restart
   try {
     console.log("--- Loading Existing On-Chain Positions ---");
-    const user = driftClient.getUser();
-    const perpPositions = user.getActivePerpPositions();
 
-    if (perpPositions.length > 0) {
+    if (STRATEGY_CONFIG.deltaNeutralMode) {
+      // DN mode: reconstruct paired spot+perp positions
+      const restored = loadExistingDnPositions(driftClient);
+      dnPositions.push(...restored);
+
+      // Any perp positions without matching spot = directional leftovers
+      const user = driftClient.getUser();
+      const perpPositions = user.getActivePerpPositions();
+      const dnPerpIndexes = new Set(restored.map((p) => p.perpMarketIndex));
+
       for (const pos of perpPositions) {
+        if (dnPerpIndexes.has(pos.marketIndex)) continue;
         const baseAmount = pos.baseAssetAmount.toNumber() / 1e9;
         if (Math.abs(baseAmount) < 0.0001) continue;
 
-        const direction: "short" | "long" = baseAmount < 0 ? "short" : "long";
-        const marketIndex = pos.marketIndex;
-
-        // Get market name from allowed markets
-        const marketName = STRATEGY_CONFIG.allowedMarkets.find((_m: string, _i: number) => {
-          // Try to match by checking the perp market account
-          try {
-            const market = driftClient.getPerpMarketAccount(marketIndex);
-            if (market) {
-              const name = Buffer.from(market.name).toString().trim();
-              return STRATEGY_CONFIG.allowedMarkets.includes(name);
-            }
-          } catch { /* ignore */ }
-          return false;
-        }) || `market-${marketIndex}`;
-
-        // Get actual market name from Drift
-        let resolvedName = `market-${marketIndex}`;
+        let resolvedName = `market-${pos.marketIndex}`;
         try {
-          const market = driftClient.getPerpMarketAccount(marketIndex);
-          if (market) {
-            resolvedName = Buffer.from(market.name).toString().trim();
-          }
+          const market = driftClient.getPerpMarketAccount(pos.marketIndex);
+          if (market) resolvedName = Buffer.from(market.name).toString().trim();
         } catch { /* ignore */ }
 
-        const oracle = driftClient.getOracleDataForPerpMarket(marketIndex);
+        const direction: "short" | "long" = baseAmount < 0 ? "short" : "long";
+        const oracle = driftClient.getOracleDataForPerpMarket(pos.marketIndex);
         const price = oracle.price.toNumber() / 1e6;
         const sizeUsd = Math.abs(baseAmount) * price;
 
         activePositions.push({
-          marketIndex,
+          marketIndex: pos.marketIndex,
           marketName: resolvedName,
           direction,
           sizeUsd,
           entryFundingRate: 0,
           entryTimestamp: Date.now(),
         });
-
-        console.log(`  Restored: ${resolvedName} ${direction} $${sizeUsd.toFixed(2)} (${Math.abs(baseAmount).toFixed(6)} base)`);
+        console.log(`  Restored directional: ${resolvedName} ${direction} $${sizeUsd.toFixed(2)}`);
       }
-      console.log(`  Loaded ${activePositions.length} existing positions.\n`);
+
+      console.log(`  Loaded: ${dnPositions.length} DN + ${activePositions.length} directional positions.\n`);
+
+      // Transition: close leftover directional positions (switching from directional to DN mode)
+      if (activePositions.length > 0) {
+        console.log("--- Transitioning: closing directional positions for DN mode ---");
+        for (let i = activePositions.length - 1; i >= 0; i--) {
+          const pos = activePositions[i];
+          console.log(`  Closing directional ${pos.marketName} ${pos.direction} $${pos.sizeUsd.toFixed(2)}`);
+          try {
+            await closeBasisPosition(driftClient, pos.marketIndex);
+          } catch (err) {
+            console.error(`  Failed to close ${pos.marketName}:`, err);
+          }
+          activePositions.splice(i, 1);
+        }
+        console.log("  Directional positions closed. Ready for DN mode.\n");
+      }
     } else {
-      console.log("  No existing positions found.\n");
+      // Original directional mode
+      const user = driftClient.getUser();
+      const perpPositions = user.getActivePerpPositions();
+
+      if (perpPositions.length > 0) {
+        for (const pos of perpPositions) {
+          const baseAmount = pos.baseAssetAmount.toNumber() / 1e9;
+          if (Math.abs(baseAmount) < 0.0001) continue;
+
+          const direction: "short" | "long" = baseAmount < 0 ? "short" : "long";
+          const marketIndex = pos.marketIndex;
+
+          let resolvedName = `market-${marketIndex}`;
+          try {
+            const market = driftClient.getPerpMarketAccount(marketIndex);
+            if (market) resolvedName = Buffer.from(market.name).toString().trim();
+          } catch { /* ignore */ }
+
+          const oracle = driftClient.getOracleDataForPerpMarket(marketIndex);
+          const price = oracle.price.toNumber() / 1e6;
+          const sizeUsd = Math.abs(baseAmount) * price;
+
+          activePositions.push({
+            marketIndex,
+            marketName: resolvedName,
+            direction,
+            sizeUsd,
+            entryFundingRate: 0,
+            entryTimestamp: Date.now(),
+          });
+
+          console.log(`  Restored: ${resolvedName} ${direction} $${sizeUsd.toFixed(2)} (${Math.abs(baseAmount).toFixed(6)} base)`);
+        }
+        console.log(`  Loaded ${activePositions.length} existing positions.\n`);
+      } else {
+        console.log("  No existing positions found.\n");
+      }
     }
   } catch (e) {
     console.error("Warning: Failed to load existing positions:", e);
@@ -688,8 +909,14 @@ async function main(): Promise<void> {
     // Heartbeat
     const equity = driftClient.getUser().getTotalCollateral().toNumber() / 1e6;
     const severityLabels = ["CLEAR", "LOW", "HIGH", "CRITICAL"];
+    const posCount = dnPositions.length + activePositions.length;
+    const dnTag = STRATEGY_CONFIG.deltaNeutralMode
+      ? ` [DN:${dnPositions.length} DIR:${activePositions.length}` +
+        (dnPositions.length > 0 ? ` T:${(dnPositions[0].tiltPct * 100).toFixed(0)}%` : "") +
+        `]`
+      : "";
     console.log(
-      `[${new Date().toISOString()}] Positions: ${activePositions.length} | ` +
+      `[${new Date().toISOString()}]${dnTag} Positions: ${posCount} | ` +
       `Equity: $${equity.toFixed(2)} | ` +
       `Regime: ${currentRegime?.rebalanceMode ?? "?"} (${currentRegime?.deploymentPct ?? "?"}% @ ${currentRegime?.maxLeverage ?? "?"}x) | ` +
       `Signal: ${severityLabels[currentSignals.severity]} | ` +

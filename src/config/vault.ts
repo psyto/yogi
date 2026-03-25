@@ -160,7 +160,15 @@ export const STRATEGY_CONFIG = {
   // --- CROSS-VENUE FUNDING (5th signal dimension) ---
   // Compare Drift funding vs Binance/Bybit to detect convergence opportunities
   crossVenueSpreadThresholdApy: 5.0, // Minimum APY spread to flag divergence
-};
+
+  // --- DELTA-NEUTRAL MODE ---
+  deltaNeutralMode: true,          // Enable DN: spot buy + perp short (funding-only profit)
+  dnTiltPct: 0.10,                 // Max tilt: 10% extra short bias in calm markets
+  dnMinFundingApy: 5.0,            // Min annualized funding to open DN position
+  dnMaxSlippagePct: 0.5,           // Max acceptable slippage per leg
+  dnDeltaDriftThreshold: 5.0,      // % delta drift before rebalancing legs
+  dnEligibleMarkets: ["SOL-PERP", "BTC-PERP", "ETH-PERP"] as string[],
+} as Record<string, any>;
 
 export let vaultAddress = process.env.VAULT_ADDRESS
   ? new PublicKey(process.env.VAULT_ADDRESS)
