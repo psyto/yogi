@@ -346,6 +346,32 @@ pm2 save && pm2 startup
 - **Data feed**: [Drift Data API](https://data.api.drift.trade) — funding rates, market stats, OHLC candles
 - **RPC**: Helius (websocket subscription mode)
 
+## Complementary Portfolio — Yogi + Kodiak
+
+Yogi pairs with [Kodiak](https://github.com/psyto/kodiak) (Hyperliquid) to form a diversified DN funding portfolio. They harvest funding from uncorrelated sources:
+
+| | Yogi (Drift) | Kodiak (Hyperliquid) |
+|---|---|---|
+| DN assets | SOL, BTC, ETH | HYPE |
+| Funding driver | Broad crypto market sentiment | Hyperliquid ecosystem conviction |
+| Funding profile | Volatile, high peaks (20-160% APY) | Stable, moderate (5-11% APY) |
+| Strength | Multi-asset diversification | Structural long bias = persistent funding |
+
+**Why they complement:**
+- BTC/SOL/ETH funding is cyclical — spikes in bull markets, can flip negative in bear. Yogi earns most when crypto sentiment is strong.
+- HYPE funding is structurally positive — HYPE holders are ecosystem believers who stay long. Kodiak earns steadily regardless of broader market.
+- When one source dips, the other typically holds. Natural diversification without correlation engineering.
+
+**Combined portfolio estimate:**
+
+| Condition | Yogi (60%) | Kodiak (40%) | Blended APY |
+|-----------|-----------|-------------|-------------|
+| Bull | ~20% | ~8% | ~15% |
+| Neutral | ~12% | ~6% | ~10% |
+| Bear stress | ~5% | ~5% | ~5% |
+
+Both vaults share the same strategy brain (regime engine, signal detection, dynamic tilt) but operate on different chains, different assets, and different funding dynamics.
+
 ## Hackathon
 
 Built for the [Ranger Build-A-Bear Hackathon](https://ranger.finance/build-a-bear-hackathon) (Mar 9 – Apr 6, 2026).

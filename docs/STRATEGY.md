@@ -257,6 +257,19 @@ Monitored every **30 seconds** — 480x more frequent than the 4-hour rebalance.
 | **Live total** | | **12-24%** |
 | **Full stack target** | | **14-28% (hostile) / 20-35% (normal)** |
 
+## Complementary Portfolio — Yogi + Kodiak
+
+Yogi is designed to work alongside [Kodiak](https://github.com/psyto/kodiak) (Hyperliquid). Together they harvest funding from uncorrelated sources:
+
+- **Yogi** (SOL, BTC, ETH on Drift) — funding driven by broad crypto market sentiment. Volatile, with high peaks in bull markets. Multi-asset diversification reduces single-market risk.
+- **Kodiak** (HYPE on Hyperliquid) — funding driven by Hyperliquid ecosystem conviction. HYPE holders are structurally long-biased, creating persistent positive funding regardless of broader market conditions.
+
+**Why complementary:** BTC/SOL/ETH funding is cyclical and can flip negative during bear stress. HYPE funding stays positive because ecosystem believers don't sell. When Drift funding dips, Hyperliquid HYPE typically holds — and vice versa.
+
+**Recommended allocation:** 60% Yogi / 40% Kodiak. Yogi gets more due to 3 DN markets vs Kodiak's 1, providing better capital absorption and diversification.
+
+**Blended estimate:** 10-15% APY in normal conditions, 5% floor in stress (both vaults earn lending yield even when DN positions are closed).
+
 ## Backtest Results (Feb 13 – Mar 16, 2026)
 
 32-day comparative backtest (Baseline vs Yogi on identical data):
