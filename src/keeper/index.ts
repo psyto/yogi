@@ -740,7 +740,7 @@ async function main(): Promise<void> {
 
     if (STRATEGY_CONFIG.deltaNeutralMode) {
       // DN mode: reconstruct paired spot+perp positions
-      const restored = loadExistingDnPositions(driftClient);
+      const restored = await loadExistingDnPositions(driftClient);
       dnPositions.push(...restored);
 
       // Any perp positions without matching spot = directional leftovers

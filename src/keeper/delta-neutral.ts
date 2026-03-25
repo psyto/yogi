@@ -284,26 +284,21 @@ export async function closeDeltaNeutral(
     success = false;
   }
 
-  // Step 2: Sell spot
+  // Step 2: Sell spot — always use recorded size (getSpotPosition scaledBalance
+  // uses different precision and is unreliable for detecting spot holdings)
   try {
-    const user = driftClient.getUser();
-    const spotPos = user.getSpotPosition(spotMarketIndex);
-    if (spotPos && !spotPos.scaledBalance.isZero()) {
-      // Use the recorded spot size to sell
-      const spotBaseAmount = new BN(
-        Math.floor(position.spotSizeCoins * BASE_PRECISION)
-      );
-      const spotTx = await driftClient.placeSpotOrder({
-        orderType: OrderType.MARKET,
-        marketType: MarketType.SPOT,
-        marketIndex: spotMarketIndex,
-        direction: PositionDirection.SHORT,
-        baseAssetAmount: spotBaseAmount,
-      });
-      console.log(`Spot SELL: ${position.spotSizeCoins.toFixed(6)} ${coin} | tx: ${spotTx}`);
-    } else {
-      console.log(`No spot position to sell on ${coin}`);
-    }
+    const spotBaseAmount = new BN(
+      Math.floor(position.spotSizeCoins * BASE_PRECISION)
+    );
+    console.log(`Selling spot: ${position.spotSizeCoins.toFixed(6)} ${coin} (market index ${spotMarketIndex})`);
+    const spotTx = await driftClient.placeSpotOrder({
+      orderType: OrderType.MARKET,
+      marketType: MarketType.SPOT,
+      marketIndex: spotMarketIndex,
+      direction: PositionDirection.SHORT,
+      baseAssetAmount: spotBaseAmount,
+    });
+    console.log(`Spot SELL: ${position.spotSizeCoins.toFixed(6)} ${coin} | tx: ${spotTx}`);
   } catch (e) {
     console.error(`Spot sell failed for ${coin}:`, e);
     success = false;
@@ -328,11 +323,10 @@ export function checkDeltaDrift(
     ? Math.abs(perpPos.baseAssetAmount.toNumber() / BASE_PRECISION)
     : 0;
 
-  // Get actual spot size (approximate from scaled balance)
-  const spotPos = user.getSpotPosition(position.spotMarketIndex);
-  const actualSpotSize = spotPos
-    ? spotPos.scaledBalance.toNumber() / 1e9 // Drift spot precision
-    : 0;
+  // Use recorded spot size — Drift's getSpotPosition scaledBalance uses
+  // different precision and is unreliable for reading actual token amounts.
+  // Delta drift is primarily caused by perp size changes (liquidations, funding).
+  const actualSpotSize = position.spotSizeCoins;
 
   const delta = actualSpotSize - actualPerpSize;
   const avgSize = (actualSpotSize + actualPerpSize) / 2;
@@ -378,9 +372,9 @@ export function formatDnPosition(
  * Load existing on-chain positions and reconstruct DN state.
  * Called on startup to prevent duplicate position opening.
  */
-export function loadExistingDnPositions(
+export async function loadExistingDnPositions(
   driftClient: DriftClient,
-): DeltaNeutralPosition[] {
+): Promise<DeltaNeutralPosition[]> {
   const positions: DeltaNeutralPosition[] = [];
   const user = driftClient.getUser();
 
@@ -390,16 +384,21 @@ export function loadExistingDnPositions(
 
     // Check if we have both spot and perp positions
     const perpPos = user.getPerpPosition(perpIndex);
-    const spotPos = user.getSpotPosition(spotIndex);
 
     const perpSize = perpPos
       ? Math.abs(perpPos.baseAssetAmount.toNumber() / BASE_PRECISION)
       : 0;
 
-    // Spot balance — scaledBalance is in a different precision
-    const spotSize = spotPos
-      ? spotPos.scaledBalance.toNumber() / 1e9
-      : 0;
+    // Use getTokenAmount for correct spot balance (handles precision internally)
+    let spotSize = 0;
+    try {
+      const spotMarket = driftClient.getSpotMarketAccount(spotIndex);
+      if (spotMarket) {
+        const tokenAmount = user.getTokenAmount(spotIndex);
+        const precision = Math.pow(10, spotMarket.decimals);
+        spotSize = tokenAmount.toNumber() / precision;
+      }
+    } catch { /* no spot position */ }
 
     // Only count as DN if we have BOTH legs
     if (perpSize > 0.0001 && spotSize > 0.0001) {
@@ -427,6 +426,24 @@ export function loadExistingDnPositions(
         `delta=${getDelta(pos).toFixed(6)} (${getDeltaPct(pos).toFixed(1)}%) ` +
         `tilt=${(tiltPct * 100).toFixed(0)}%`
       );
+    } else if (spotSize > 0.0001 && perpSize <= 0.0001) {
+      // Orphaned spot — perp leg was closed but spot wasn't sold
+      console.log(
+        `  WARNING: Orphaned spot ${coin} = ${spotSize.toFixed(6)} coins (no matching perp). Will sell.`
+      );
+      try {
+        const spotBaseAmount = new BN(Math.floor(spotSize * BASE_PRECISION));
+        await driftClient.placeSpotOrder({
+          orderType: OrderType.MARKET,
+          marketType: MarketType.SPOT,
+          marketIndex: spotIndex,
+          direction: PositionDirection.SHORT,
+          baseAssetAmount: spotBaseAmount,
+        });
+        console.log(`  Sold orphaned spot: ${spotSize.toFixed(6)} ${coin}`);
+      } catch (err) {
+        console.error(`  Failed to sell orphaned spot ${coin}:`, err);
+      }
     }
   }
 
