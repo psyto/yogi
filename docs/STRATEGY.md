@@ -10,7 +10,9 @@ Drift's hybrid AMM creates structural inefficiencies (OI imbalance, mark/oracle 
 
 **Proven in live bear market (Mar 20–23, 2026):** BTC dropped 7.4%. Yogi delivered +$8.08 (+1.61%) with zero drawdown. The regime engine held cautious deployment (50% @ 0.5x) while other strategies would have been fully exposed.
 
-**Revenue sources (live)**: Funding payments + mark/oracle premium convergence + OI rebalancing + cross-venue intelligence. Four sources active now. Lending floor (Kamino/Marginfi) and LST collateral (jitoSOL) are designed and planned for post-hackathon implementation.
+**Revenue sources (live)**: Bidirectional funding payments (SHORT positive + LONG negative markets) + mark/oracle premium convergence + OI rebalancing + cross-venue intelligence. The keeper always positions on the collecting side — exits immediately when funding direction flips. Lending floor (Kamino/Marginfi) and LST collateral (jitoSOL) are designed and planned for post-hackathon.
+
+**Bidirectional execution (live)**: Unlike most basis trade vaults that only SHORT, Yogi also opens LONG positions on markets with deeply negative funding. When Drift SOL funding is -2,000% APY, going LONG collects that funding. Shorts and longs partially offset price risk, enabling higher deployment (75% vs 50% in directional-only mode).
 
 ## How It Works
 

@@ -21,7 +21,9 @@ During a week where BTC dropped 7.4% ($73,872 → $68,402), Yogi:
 
 ### Intelligence in Action — Real Events
 
-**DOGE funding collapse:** Drift DOGE funding spiked to -3,271% APY. Yogi's cross-venue detector showed Binance at -6.4% and Bybit at -6.9% — confirming the distortion was Drift-specific. The keeper exited DOGE and rotated to SUI (+1,034% APY).
+**DOGE funding collapse:** Drift DOGE funding spiked to -3,271% APY. Yogi's cross-venue detector showed Binance at -6.4% and Bybit at -6.9% — confirming the distortion was Drift-specific. The keeper exited the DOGE SHORT and rotated to SUI (+1,034% APY).
+
+**Bidirectional adaptation:** When SOL and ETH funding turned deeply negative (-2,000% and -1,700% APY on Drift), Yogi automatically opened LONG positions to collect from the other side. Shorts paying funding are exited immediately; longs replace them to keep collecting.
 
 **Cross-venue divergence:** Drift BTC funding at +1,445% while Binance at -7.5% and Bybit at -9.6%. A +1,454% spread. Yogi sees this and flags convergence risk on every BTC entry decision.
 
@@ -33,7 +35,8 @@ During a week where BTC dropped 7.4% ($73,872 → $68,402), Yogi:
 
 Yogi stacks multiple yield sources across two capital pools, with an intelligence layer that dynamically adjusts exposure:
 
-1. **Lending Floor (30% — designed, not yet active)** — Architecture supports routing idle USDC to Kamino/Marginfi. Currently idle USDC stays as Drift collateral. Planned for post-hackathon.
+1. **Bidirectional Funding Harvesting** — SHORT when funding positive, LONG when funding negative. Collects from both sides of the market simultaneously.
+2. **Lending Floor (30% — designed, not yet active)** — Architecture supports routing idle USDC to Kamino/Marginfi. Currently idle USDC stays as Drift collateral. Planned for post-hackathon.
 2. **Regime-Adaptive Arbitrage (70%)** — Four stacked yield sources:
    - **Funding rate** — Bidirectional: SHORT when positive, LONG when negative
    - **Premium convergence** — Mark/oracle deviation mean-reverts
@@ -86,7 +89,9 @@ Most vaults break in bear markets. They react *after* the crash, not before. Yog
 
 4. **Regime Discipline** — vol at 57%? Yogi goes cautious (50% deployed, 0.5x leverage). Not because it's told to, but because the deployment matrix says high vol + clear signals = protect capital. Other vaults stay fully deployed and eat the drawdown.
 
-5. **Adaptive Rotation** — DOGE funding collapsed? Yogi exits within 4 hours and rotates to SUI. No manual intervention. The keeper decides based on funding scans across 73 Drift markets.
+5. **Adaptive Rotation** — DOGE funding collapsed? Yogi exits the SHORT within 4 hours and rotates to SUI. No manual intervention. The keeper decides based on funding scans across 73 Drift markets.
+
+6. **Bidirectional** — not just shorts. When SOL funding is -2,000% APY, Yogi goes LONG to collect. When SUI is +1,200%, Yogi goes SHORT. Always on the collecting side, regardless of market direction. The regime is loosened for bidirectional because shorts and longs partially offset price risk.
 
 **Every other vault shows a backtest. Yogi shows live mainnet performance through a -7.4% BTC drawdown with zero loss.**
 
@@ -102,13 +107,13 @@ Most vaults break in bear markets. They react *after* the crash, not before. Yog
 
 | Source | Mechanism | Est. APY | Status |
 |--------|-----------|----------|--------|
-| Funding harvesting | Bidirectional perp positions collect funding | 6-10% | **Live** |
+| Bidirectional funding | SHORT positive + LONG negative markets simultaneously | 8-15% | **Live** |
 | Premium convergence | Mark/oracle deviation mean-reverts | 2-4% | **Live** (via imbalance detector) |
 | Cross-venue intelligence | Entry optimization via Binance/Bybit comparison | 1-2% | **Live** |
 | Lending floor | Route idle USDC to Kamino/Marginfi | 1.5-2% | Designed, post-hackathon |
 | LST collateral | jitoSOL staking + MEV | 1.5-2% | Designed, post-hackathon |
-| **Live combined** | | **9-16%** | |
-| **Full stack target** | | **12-18% (hostile) / 20-30% (normal)** | |
+| **Live combined** | | **11-21%** | |
+| **Full stack target** | | **14-24% (hostile) / 20-30% (normal)** | |
 
 ## Architecture
 
