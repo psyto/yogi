@@ -132,11 +132,13 @@ export const STRATEGY_CONFIG = {
   },
 
   // Regime deployment matrix: volRegime × signalSeverity → % capital deployed
+  // Loosened for bidirectional mode: shorts + longs partially offset price risk,
+  // so higher deployment is safer than pure directional.
   deploymentMatrix: {
-    veryLow: [100, 80, 50, 25],  // [NONE, LOW, HIGH, CRITICAL]
-    low:     [ 85, 70, 40, 20],
-    normal:  [ 70, 55, 30, 15],
-    high:    [ 50, 35, 20, 10],
+    veryLow: [100, 95, 70, 40],  // [NONE, LOW, HIGH, CRITICAL]
+    low:     [ 95, 85, 55, 30],
+    normal:  [ 85, 70, 45, 20],
+    high:    [ 75, 55, 30, 15],
     extreme: [  0,  0,  0,  0],
   } as Record<string, number[]>,
 
@@ -145,7 +147,7 @@ export const STRATEGY_CONFIG = {
     veryLow: [2.0, 1.5, 1.0, 0.5],
     low:     [1.5, 1.2, 0.8, 0.3],
     normal:  [1.0, 0.8, 0.5, 0.2],
-    high:    [0.5, 0.3, 0.2, 0.0],
+    high:    [0.8, 0.5, 0.3, 0.0],
     extreme: [0.0, 0.0, 0.0, 0.0],
   } as Record<string, number[]>,
 
