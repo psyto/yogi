@@ -25,6 +25,7 @@ import {
   PRICE_PRECISION,
 } from "../config/constants";
 import { STRATEGY_CONFIG } from "../config/vault";
+import { checkDnSlippage } from "./slippage-guard";
 
 // --- Types ---
 
@@ -158,6 +159,23 @@ export async function openDeltaNeutral(
 
   // Apply tilt: perp short is larger than spot by tiltPct
   const perpSizeCoins = roundToStep(roundedSpotSize * (1 + tiltPct));
+
+  // --- Slippage Guard ---
+  const maxSlippage = STRATEGY_CONFIG.dnMaxSlippagePct ?? 0.5;
+  const slippageCheck = checkDnSlippage(
+    driftClient,
+    marketName,
+    roundedSpotSize,
+    perpSizeCoins,
+    maxSlippage,
+  );
+  if (!slippageCheck.ok) {
+    console.log(
+      `Slippage guard blocked DN open for ${marketName}: ${slippageCheck.reason}`
+    );
+    return null;
+  }
+  console.log(`Slippage guard passed: ${slippageCheck.reason}`);
 
   const spotNotional = roundedSpotSize * price;
   const perpNotional = perpSizeCoins * price;

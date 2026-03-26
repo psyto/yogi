@@ -229,6 +229,24 @@ Monitored every **30 seconds** — 480x more frequent than the 4-hour rebalance.
 | Min funding APY | 5% to open DN position |
 | Max tilt | 10% (dynamic, 0% in stress) |
 
+### Scaling Risks
+
+$500 is proof-of-concept, not proof-of-scale. We know these risks exist. Here's our plan.
+
+| Risk | Technical Detail | Severity at $1M+ | Mitigation Plan |
+|------|-----------------|-------------------|-----------------|
+| **Drift spot slippage** | Drift SOL spot does ~$2-5M daily volume. A $1M vault deploying 40% ($400K) into one market at 70% spot allocation = $280K spot buy. At current depth, that's 50-150 bps slippage per leg, eating 1-3% APY round-trip. BTC/ETH spot are thinner. | High | TWAP execution: split orders into $10-20K chunks over 5-10 minutes. Reduce `maxPerMarket` from 40% to 25%. Use limit orders with 30s timeout + fallback to market. Multi-asset DN naturally distributes across 3 order books. |
+| **Tilt exposure in flash pumps** | At 10% tilt, the perp short exceeds spot by 10%. A 15% price pump in <5 min (between signal detection cycles) creates ~1.5% portfolio loss on the unhedged portion before `computeDynamicTilt` reduces to 0%. The 5-min detection cycle is the bottleneck — signals are accurate but not fast enough for flash moves. | Medium | Cap `MAX_TILT_PCT` at 5% for AUM > $500K (halves worst-case tilt loss to ~0.75%). Add a 1-minute fast-path price check: if any DN asset moves >3% in 1 min, force tilt to 0% immediately without waiting for full signal pipeline. WebSocket price subscription for sub-minute detection (post-hackathon). |
+| **Single keeper SPOF** | One `tsx` process on one EC2 instance (us-east-1). pm2 handles process crashes with auto-restart + `pm2 startup` for reboot. But: AZ outage, OOM kill, or RPC endpoint failure leaves positions unmanaged. During a CRITICAL event, stale tilt and leverage persist until restart. Position loader reconstructs DN pairs from on-chain state, but the gap between failure and recovery is unhedged. | High | Current: pm2 auto-restart + position loader covers 90% of failures (process crash, reboot). Planned: multi-region keeper (us-east-1 + eu-west-1) with distributed lock (Redis/DynamoDB) for leader election. Heartbeat watchdog: if no heartbeat for 2 min, secondary keeper takes over. External health endpoint for uptime monitoring (e.g., BetterUptime). |
+| **Self-impact on Drift AMM** | Larger DN positions move Drift's AMM pricing. Own spot buys push mark price up; own perp shorts push it down. This creates artificial mark/oracle divergence that triggers spread blow-out signals (false positives) and delta drift rebalances (unnecessary churn). At $1M+, own orders are a non-trivial fraction of Drift's AMM depth. | Medium | Track own-order market impact by comparing pre/post-order mark prices. Widen `DELTA_DRIFT_THRESHOLD` from 5% to 8% at scale to absorb self-induced drift. Use post-only limit orders above $100K to avoid taker impact. Exclude own-order-induced spread from signal detection. |
+| **Funding rate compression** | DN strategy = net short. More DN capital on Drift = more aggregate short interest = funding rates compress toward zero. The strategy partially erodes its own alpha at scale. With $1M+ in DN shorts across SOL/BTC/ETH, Yogi's own positions visibly affect Drift's funding rate calculation. | Low-Medium | Multi-asset DN distributes short pressure across 3 markets (vs single-asset). Cross-venue detector catches compression early: if Drift funding converges toward CEX rates, the edge is shrinking. Hard floor: exit DN when funding < 5% APY (`MIN_FUNDING_APY_THRESHOLD`). Implement vault capacity cap at $5M until Drift spot market depth grows. |
+
+**Scaling roadmap**:
+- **$500-$50K** (current): Architecture works as-is. No execution changes needed.
+- **$50K-$500K**: TWAP execution, limit orders, tilt cap reduction, delta drift threshold widening.
+- **$500K-$5M**: Multi-region keeper, capacity cap, self-impact tracking, post-only orders.
+- **$5M+**: Requires Drift spot liquidity growth or off-Drift spot execution (e.g., Jupiter routing for spot leg).
+
 ### Drawdown Management
 
 - **3% drawdown**: Close worst-performing DN position

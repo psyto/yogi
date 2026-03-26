@@ -242,6 +242,20 @@ Matrices are loosened vs pure directional because DN positions have partial pric
 | Startup with stale positions | Position loading reconstructs DN pairs from on-chain state |
 | Transition from directional | Auto-closes legacy directional positions on DN mode startup |
 
+## Scaling Risks
+
+$500 is proof-of-concept, not proof-of-scale. We know these risks exist. Here's our plan.
+
+| Risk | Impact | Severity at $1M+ | Mitigation Plan |
+|------|--------|-------------------|-----------------|
+| **Drift spot liquidity** | Slippage on spot buys/sells erodes DN yield. Drift SOL spot does ~$2-5M daily volume — a $1M vault moving 40% into one market hits real slippage. | High | Split entries across multiple blocks. TWAP execution over 5-10 minutes. Reduce max-per-market from 40% to 25%. Multi-asset DN distributes impact across 3 markets. |
+| **Tilt exposure in flash pumps** | 10% tilt = 10% unhedged short. A 15% pump in <5 min (faster than detection cycle) causes ~1.5% loss before tilt reduces to 0%. | Medium | Cap tilt at 5% above $500K AUM. Add 1-min fast-path signal check for price moves >3%. WebSocket price feed for sub-minute detection (post-hackathon). |
+| **Single keeper SPOF** | One EC2 instance, one process. If it dies during a stress event, positions stay open with stale tilt/leverage. pm2 restarts help but don't cover AZ outages. | High | pm2 auto-restart covers process crashes. Position loader reconstructs state on restart. Multi-region keeper with leader election planned for >$100K AUM. Health endpoint for external monitoring. |
+| **Oracle/mark divergence at size** | Larger DN positions influence Drift's AMM. Own orders can move mark price, creating phantom delta drift and unnecessary rebalances. | Medium | Monitor own-order market impact. Widen delta drift threshold from 5% to 8% at scale. Use limit orders instead of market orders above $100K. |
+| **Funding rate compression** | More DN capital on Drift = more shorts = funding rates compress. The strategy partially erodes its own edge at scale. | Low-Medium | Multi-asset DN distributes pressure. Cross-venue monitoring detects compression early. Hard floor: exit DN when funding < 5% APY regardless. Vault capacity cap at $5M until Drift spot liquidity grows. |
+
+**Bottom line**: The current architecture works cleanly at $500-$50K. Between $50K-$500K, execution improvements (TWAP, limit orders, tighter tilt caps) are needed. Above $500K, infrastructure changes (multi-region keeper, capacity caps) become essential. We've designed for this progression — the risk management framework scales, the execution layer needs investment.
+
 ## Backtest Results
 
 32-day comparative backtest (Feb 13 – Mar 16, 2026):
