@@ -2,8 +2,8 @@ const puppeteer = require("puppeteer");
 const path = require("path");
 const { execSync } = require("child_process");
 
-const TOTAL_SLIDES = 8;
-const SECONDS_PER_SLIDE = 10;
+const TOTAL_SLIDES = 10;
+const SECONDS_PER_SLIDE = 18;
 const FPS = 30;
 const FRAMES_PER_SLIDE = SECONDS_PER_SLIDE * FPS; // 300 frames per slide
 const TOTAL_FRAMES = TOTAL_SLIDES * FRAMES_PER_SLIDE;
