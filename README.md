@@ -6,6 +6,26 @@ Yogi is a production-grade USDC vault on Solana that runs **dynamic tilted delta
 
 **Live on Solana mainnet since March 20, 2026.** $500 deposited. Zero drawdown. Keeper running 24/7 on AWS EC2.
 
+## Why Drift for Delta-Neutral Yield?
+
+Everyone says Drift is for high-frequency trading, not yield farming. We didn't accept that. We built the same dynamic tilted DN strategy on both Drift and Hyperliquid ([Kodiak](https://github.com/psyto/kodiak)) to find out.
+
+**What we found:**
+
+| | Drift (Yogi) | Hyperliquid (Kodiak) |
+|---|---|---|
+| DN-eligible assets | SOL, BTC, ETH (3 markets) | HYPE only (1 market) |
+| Lending | Native — Drift auto-lends idle collateral | Bridge required to HyperEVM (HyperLend) |
+| Funding settlement | Continuous | Hourly |
+| Maker fees | -0.2 bps (rebate — you earn) | 1.5 bps (you pay) |
+| Cross-margin | Spot + perp in one account | Separate accounts |
+
+Drift's composability — spot + perp + lending in one account, no bridges — makes it the natural platform for institutional delta-neutral yield. Multi-asset DN diversifies funding risk across three uncorrelated markets. No other Drift vault uses this.
+
+Neither platform "won." They serve different purposes: Drift provides diversified multi-asset yield; Hyperliquid provides concentrated single-asset yield on HYPE. They [complement each other](#complementary-portfolio--yogi--kodiak). But if institutions are choosing one foundation for yield infrastructure, Drift's composability and diversification make it the stronger long-term choice.
+
+**To understand something properly, you need to see outside of it.** We built on both. [PerpU](https://github.com/psyto/perpu) — our perp DEX learning platform — shares what we learned.
+
 ## Live Bear Market Performance (Mar 20–23, 2026)
 
 During a week where BTC dropped 7.4% ($73,872 → $68,402), Yogi:
@@ -383,17 +403,21 @@ Built for the [Ranger Build-A-Bear Hackathon](https://ranger.finance/build-a-bea
 
 ### Why Yogi Should Win
 
-**1. Delta-neutral eliminates price risk** — the hackathon is called "Build-A-Bear." Yogi doesn't just survive bear markets — it's structurally immune to price direction. Spot + perp cancel out. Yield comes from funding, not price bets.
+**1. We proved Drift is for institutional yield, not just HFT** — we built the same DN strategy on Drift and Hyperliquid. Drift's composability (spot + perp + lending, no bridges) makes multi-asset DN easy. This is the story the Drift ecosystem needs to attract institutional capital.
 
-**2. Dynamic tilt is novel technology** — no other Drift vault adjusts its hedge ratio in real time based on signals. Pure DN in stress, tilted for extra yield when safe. This is a genuine innovation in on-chain vault design.
+**2. Delta-neutral eliminates price risk** — the hackathon is called "Build-A-Bear." Yogi doesn't just survive bear markets — it's structurally immune to price direction. Spot + perp cancel out. Yield comes from funding, not price bets.
 
-**3. Multi-asset DN on Drift** — SOL, BTC, and ETH all have spot markets on Drift. Yogi can run parallel DN positions across all three, diversifying funding sources. No other submission uses Drift's spot markets for delta-neutral execution.
+**3. Dynamic tilt is novel technology** — no other Drift vault adjusts its hedge ratio in real time based on signals. Pure DN in stress, tilted for extra yield when safe.
 
-**4. 5D cross-venue intelligence** — comparing Drift funding against Binance and Bybit in real time. When Drift DOGE funding is +2,000% and Binance is -6%, Yogi sees the distortion. Other vaults are blind.
+**4. Multi-asset DN on Drift** — SOL, BTC, and ETH simultaneously. Three uncorrelated funding sources in one vault. No other submission uses Drift's spot markets for DN.
 
-**5. Live mainnet performance, not backtests** — deployed March 20, running continuously since. On-chain verifiable via the Drift UI and Solscan.
+**5. 5D cross-venue intelligence** — comparing Drift funding against Binance and Bybit in real time. No other Drift vault does this.
 
-**6. Production-ready architecture** — Voltr vault integration, delegate trading model, position loading on restart, automatic DN transition, 30-second health monitoring. Ready for $500K seeding on day one.
+**6. Live mainnet performance, not backtests** — deployed March 20, running continuously. On-chain verifiable.
+
+**7. Ecosystem contribution** — Yogi isn't just a vault. [PerpU](https://github.com/psyto/perpu) is a learning platform that teaches why Drift is the right platform for institutional yield. Vault + education = ecosystem growth.
+
+**8. Production-ready** — Voltr integration, delegate trading, position loading on restart, 30-second health monitoring. Ready for $500K seeding on day one.
 
 ## License
 
