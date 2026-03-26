@@ -16,16 +16,29 @@ Drift's hybrid AMM creates structural inefficiencies (OI imbalance, mark/oracle 
 
 **Multi-asset DN**: Unlike single-asset DN vaults, Yogi can run parallel delta-neutral positions on SOL, BTC, and ETH — all of which have spot markets on Drift. This diversifies funding sources and reduces single-market risk.
 
-### Why Drift — Lessons from Building on Both
+### Why Drift and Hyperliquid — Platform Selection
 
-The common narrative says Drift is for HFT, not yield farming. We tested this by building the same dynamic tilted DN strategy on both Drift ([Yogi](https://github.com/psyto/yogi)) and Hyperliquid ([Kodiak](https://github.com/psyto/kodiak)).
+We evaluated every major perp DEX for DN feasibility. The requirement is simple: both spot and perp markets on the same venue.
 
-What we found:
+**No viable EVM venue exists for DN today:**
+- Vertex Protocol (Arbitrum) — was the best EVM candidate, **shut down on Arbitrum** (migrating to Ink/Kraken L2)
+- GMX v2 (Arbitrum) — pool-based spot (AMM slippage), not order book
+- dYdX v4 — moved to Cosmos, no longer EVM
+- GRVT, Gains, Kwenta — perp only, no spot markets
 
-- **Drift**: multi-asset DN (SOL, BTC, ETH), native auto-lending, continuous funding, maker rebates, unified cross-margin. No bridges, no external integrations needed.
-- **Hyperliquid**: single-asset DN (HYPE only), bridge required for lending (HyperCore to HyperEVM), hourly settlement, maker pays fees.
+With Ethereum refocusing on L1 scaling, L2 platforms face existential uncertainty for long-term vault infrastructure. Building on an L2 today means accepting platform migration risk (as Vertex demonstrated).
 
-Neither platform is objectively better — they serve different purposes and [complement each other](#complementary-portfolio--yogi--kodiak). Hyperliquid's HYPE funding is stable (ecosystem conviction); Drift's multi-asset funding is diversified (broad market). But Drift's composability makes it the natural platform for institutional yield infrastructure.
+**Drift and Hyperliquid are the only two independent L1s where DN works:**
+
+| | Drift | Hyperliquid |
+|---|---|---|
+| TVL | $1.1B | $4.5B |
+| Daily volume | $118M | $6.7B |
+| DN assets | SOL, BTC, ETH | HYPE only |
+| Composability | Spot + perp + lending in one account | Bridge required for lending |
+| L1 independence | Solana — no Ethereum dependency | Own L1 — no Ethereum dependency |
+
+Neither platform is objectively better — they serve different purposes and [complement each other](#complementary-portfolio--yogi--kodiak). Hyperliquid's HYPE funding is stable (ecosystem conviction); Drift's multi-asset funding is diversified (broad market). But Drift's composability and multi-asset support make it the natural platform for institutional yield infrastructure.
 
 **To understand something properly, you need to see outside of it.** We built on both venues. [PerpU](https://github.com/psyto/perpu) — our perp DEX learning platform — shares what we learned.
 
