@@ -7,7 +7,7 @@
 ## Slide 1: Title (0:00 - 0:18)
 
 > Yogi Vault. Dynamic tilted delta-neutral on Drift.
-> We built the same strategy on Drift and Hyperliquid.
+> We built the same strategy on both Drift and Hyperliquid.
 > This is what we learned — and why Drift is where institutional yield belongs.
 
 ---
@@ -93,7 +93,7 @@
 > If we want institutions on Drift, we need education — not just vaults.
 > PerpU is a learning platform for perpetual DEXes.
 > It teaches why Drift's composability makes it the right platform for institutional yield.
-> Built from real experience — we built on Drift, Hyperliquid, and GRVT.
+> Built from real experience — we built on both Drift and Hyperliquid.
 > To understand something properly, you need to see outside of it.
 > PerpU shares what we learned.
 
@@ -106,5 +106,5 @@
 > Live on mainnet. Zero drawdown through a bear market.
 > Complementary portfolio with Kodiak. PerpU for ecosystem education.
 > Our thesis: Drift is institutional yield infrastructure, not just HFT.
-> We built on every alternative and came back to Drift.
+> We built on both Drift and Hyperliquid. Drift is where institutional yield belongs.
 > github dot com slash psyto slash yogi.
