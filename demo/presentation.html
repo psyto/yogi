@@ -14,7 +14,6 @@
   h3 { font-size: 36px; margin-bottom: 20px; color: #6b7b9c; }
   p { font-size: 28px; line-height: 1.6; max-width: 1400px; text-align: center; }
   .accent { color: #f0b040; } .green { color: #40c057; } .red { color: #e03131; } .dim { color: #666; } .blue { color: #5fb3d4; }
-  .emoji { font-size: 120px; margin-bottom: 30px; }
   .title-slide h1 { font-size: 96px; }
   .title-slide .subtitle { font-size: 32px; color: #8b9dc3; margin-top: 10px; }
   .title-slide .tagline { font-size: 40px; color: #f0b040; margin-top: 30px; }
@@ -32,6 +31,10 @@
   .fade-item.visible { opacity: 1; transform: translateY(0); }
   .signal-box { display: flex; gap: 20px; width: 1400px; margin-top: 30px; }
   .sig-card { flex: 1; border-radius: 12px; padding: 24px; text-align: center; background: #111118; border: 1px solid #333; }
+  .two-col { display: flex; gap: 30px; width: 1400px; margin-top: 20px; }
+  .two-col > div { flex: 1; }
+  .dn-flow { font-size: 20px; line-height: 2.2; }
+  .dn-flow .step { color: #f0b040; }
 </style>
 </head>
 <body>
@@ -39,182 +42,225 @@
 <!-- Slide 1: Title -->
 <div class="slide title-slide" id="slide-1">
   <h1>Yogi Vault</h1>
-  <div class="subtitle">Drift Basis Trade + Intelligent Signal Detection</div>
-  <div class="tagline">"Smarter than the average bear market vault."</div>
+  <div class="subtitle">Dynamic Tilted Delta-Neutral on Drift</div>
+  <div class="tagline">"We built on both. This is what we learned."</div>
   <p style="margin-top: 40px; color: #666;">Ranger Build-A-Bear Hackathon | Main Track + Drift Side Track</p>
 </div>
 
-<!-- Slide 2: The Problem -->
+<!-- Slide 2: The Misconception -->
 <div class="slide" id="slide-2">
-  <h2>The Problem with Basis Trade Vaults</h2>
+  <h2>The Misconception</h2>
   <div class="signal-box fade-item">
     <div class="sig-card" style="border-color: #e03131;">
-      <div style="font-size: 36px; margin-bottom: 10px;">&#x1F441;</div>
-      <div style="color: #e03131; font-size: 22px; font-weight: bold;">Reactive Risk</div>
-      <div style="font-size: 16px; color: #ccc; margin-top: 10px;">Vol-based leverage only<br>reacts AFTER damage is done</div>
+      <div style="font-size: 48px; margin-bottom: 10px;">&ldquo;</div>
+      <div style="color: #e03131; font-size: 22px; font-weight: bold;">Common Narrative</div>
+      <div style="font-size: 18px; color: #ccc; margin-top: 10px;">"Drift is for HFT,<br>not yield farming"</div>
     </div>
     <div class="sig-card" style="border-color: #e03131;">
-      <div style="font-size: 36px; margin-bottom: 10px;">&#x26A0;</div>
-      <div style="color: #e03131; font-size: 22px; font-weight: bold;">Blind to Contagion</div>
-      <div style="font-size: 16px; color: #ccc; margin-top: 10px;">Can't detect liquidation<br>cascades or OI shifts</div>
+      <div style="font-size: 48px; margin-bottom: 10px;">&ldquo;</div>
+      <div style="color: #e03131; font-size: 22px; font-weight: bold;">Surface Take</div>
+      <div style="font-size: 18px; color: #ccc; margin-top: 10px;">"Hyperliquid is where<br>the yield vaults are"</div>
     </div>
     <div class="sig-card" style="border-color: #e03131;">
-      <div style="font-size: 36px; margin-bottom: 10px;">&#x1F4C9;</div>
-      <div style="color: #e03131; font-size: 22px; font-weight: bold;">Bear Market Blind Spot</div>
-      <div style="font-size: 16px; color: #ccc; margin-top: 10px;">Low vol + building stress<br>= full exposure at worst time</div>
+      <div style="font-size: 48px; margin-bottom: 10px;">?</div>
+      <div style="color: #e03131; font-size: 22px; font-weight: bold;">Institutions Ask</div>
+      <div style="font-size: 18px; color: #ccc; margin-top: 10px;">"Where do we park capital<br>for yield with zero price risk?"</div>
     </div>
   </div>
   <p style="margin-top: 30px; color: #888;">
-    Most vaults scale leverage by volatility alone.<br>
-    <span class="accent">In a calm market with building contagion, they stay fully deployed at 2x.</span>
+    We didn't accept the narrative. <span class="accent">We built the same strategy on both platforms to find out.</span>
   </p>
 </div>
 
-<!-- Slide 3: Yogi's Solution — Intelligence Layer -->
+<!-- Slide 3: We Built on Both -->
 <div class="slide" id="slide-3">
-  <h2>Yogi's Intelligence Layer</h2>
-  <p style="margin-bottom: 30px; color: #ccc;">Four anomaly dimensions monitored every 5 minutes:</p>
+  <h2>We Built on Both</h2>
+  <p style="margin-bottom: 20px; color: #ccc;">Same strategy brain. Same signal detection. Same dynamic tilt. Two venues.</p>
+  <table class="fade-item">
+    <tr><th></th><th>Yogi (Drift)</th><th>Kodiak (Hyperliquid)</th></tr>
+    <tr><td class="dim">DN Markets</td><td class="green">SOL, BTC, ETH</td><td>HYPE only</td></tr>
+    <tr><td class="dim">Lending</td><td class="green">Native (Drift Earn)</td><td>Bridge to HyperEVM</td></tr>
+    <tr><td class="dim">Funding</td><td class="green">Continuous</td><td>Hourly settlement</td></tr>
+    <tr><td class="dim">Maker Fees</td><td class="green">-0.2 bps (rebate)</td><td>1.5 bps (pay)</td></tr>
+    <tr><td class="dim">Cross-Margin</td><td class="green">Spot + perp unified</td><td>Separate accounts</td></tr>
+    <tr><td class="dim">Concentration</td><td class="green">3 uncorrelated assets</td><td class="red">1 asset (HYPE)</td></tr>
+  </table>
+  <p style="margin-top: 20px; color: #888;">
+    <span class="accent">Drift's composability makes multi-asset delta-neutral easy.</span><br>No Jupiter. No bridges. Just placeSpotOrder + placePerpOrder.
+  </p>
+</div>
+
+<!-- Slide 4: Delta-Neutral Explained -->
+<div class="slide" id="slide-4">
+  <h2>Delta-Neutral: Zero Price Risk</h2>
+  <div class="two-col fade-item">
+    <div>
+      <div class="sig-card" style="border-color: #40c057; text-align: left;">
+        <div style="color: #40c057; font-size: 18px; font-weight: bold; margin-bottom: 15px;">HOW IT WORKS</div>
+        <div class="dn-flow">
+          <span class="step">1.</span> Buy spot BTC on Drift ($256)<br>
+          <span class="step">2.</span> Short perp BTC on Drift ($263)<br>
+          <span class="step">3.</span> Price up: spot +$X, perp -$X = <span class="green">$0</span><br>
+          <span class="step">4.</span> Price down: spot -$X, perp +$X = <span class="green">$0</span><br>
+          <span class="step">5.</span> Funding accrues: short collects = <span class="accent">pure yield</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="sig-card" style="border-color: #f0b040; text-align: left;">
+        <div style="color: #f0b040; font-size: 18px; font-weight: bold; margin-bottom: 15px;">DYNAMIC TILT (0-10%)</div>
+        <div class="dn-flow">
+          Perp short is slightly larger than spot.<br>
+          <span class="green">Calm market</span> &rarr; 10% tilt (extra yield)<br>
+          <span class="blue">LOW signal</span> &rarr; 3% tilt<br>
+          <span class="red">HIGH/CRITICAL</span> &rarr; 0% (pure DN)<br>
+          <span class="dim">Adjusts every rebalance cycle</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p style="margin-top: 20px; color: #888;">
+    <span class="accent">No other Drift vault adjusts its hedge ratio in real time based on signals.</span>
+  </p>
+</div>
+
+<!-- Slide 5: 5D Intelligence Layer -->
+<div class="slide" id="slide-5">
+  <h2>5-Dimension Signal Detection</h2>
+  <p style="margin-bottom: 20px; color: #ccc;">Checked every 5 minutes. Adjusts tilt, deployment, and leverage.</p>
   <div class="signal-box fade-item">
     <div class="sig-card" style="border-color: #f0b040;">
-      <div style="font-size: 36px; margin-bottom: 10px;">&#x2696;</div>
       <div style="color: #f0b040; font-size: 20px; font-weight: bold;">OI Shift</div>
-      <div style="font-size: 14px; color: #ccc; margin-top: 10px;">Mass repositioning<br>precedes squeezes</div>
+      <div style="font-size: 14px; color: #ccc; margin-top: 10px;">Mass repositioning<br>before squeezes</div>
     </div>
     <div class="sig-card" style="border-color: #e03131;">
-      <div style="font-size: 36px; margin-bottom: 10px;">&#x1F4A5;</div>
       <div style="color: #e03131; font-size: 20px; font-weight: bold;">Liquidation Cascade</div>
-      <div style="font-size: 14px; color: #ccc; margin-top: 10px;">OI drop = forced<br>margin calls</div>
+      <div style="font-size: 14px; color: #ccc; margin-top: 10px;">Forced margin calls<br>via OI drop</div>
     </div>
     <div class="sig-card" style="border-color: #5fb3d4;">
-      <div style="font-size: 36px; margin-bottom: 10px;">&#x1F30A;</div>
-      <div style="color: #5fb3d4; font-size: 20px; font-weight: bold;">Funding Volatility</div>
-      <div style="font-size: 14px; color: #ccc; margin-top: 10px;">Unstable rates =<br>regime transition</div>
+      <div style="color: #5fb3d4; font-size: 20px; font-weight: bold;">Funding Vol</div>
+      <div style="font-size: 14px; color: #ccc; margin-top: 10px;">Regime transitions<br>from rate instability</div>
     </div>
     <div class="sig-card" style="border-color: #40c057;">
-      <div style="font-size: 36px; margin-bottom: 10px;">&#x1F4CA;</div>
       <div style="color: #40c057; font-size: 20px; font-weight: bold;">Spread Blow-out</div>
-      <div style="font-size: 14px; color: #ccc; margin-top: 10px;">Mark/oracle divergence<br>= thin liquidity</div>
+      <div style="font-size: 14px; color: #ccc; margin-top: 10px;">Mark/oracle stress<br>thin liquidity</div>
+    </div>
+    <div class="sig-card" style="border-color: #c084fc;">
+      <div style="color: #c084fc; font-size: 20px; font-weight: bold;">Cross-Venue</div>
+      <div style="font-size: 14px; color: #ccc; margin-top: 10px;">Drift vs Binance<br>vs Bybit funding</div>
     </div>
   </div>
-  <p style="margin-top: 30px; color: #888;">
-    Max severity across dimensions becomes the aggregate signal.<br>
-    <span class="accent">Vol regime x signal severity = deployment % and leverage cap.</span>
+  <p style="margin-top: 25px; color: #888;">
+    Severity: CLEAR / LOW / HIGH / CRITICAL<br>
+    <span class="accent">Signals reduce tilt and deployment. CRITICAL = pure DN + minimal exposure.</span>
   </p>
 </div>
 
-<!-- Slide 4: Regime Engine Matrix -->
-<div class="slide" id="slide-4">
-  <h2>Regime Engine: Adaptive Deployment</h2>
-  <table class="fade-item" style="margin-top: 20px; font-size: 22px;">
-    <tr><th></th><th>CLEAR</th><th>LOW</th><th>HIGH</th><th style="color: #e03131;">CRITICAL</th></tr>
-    <tr><td class="green">Very Low Vol</td><td>100% @ 2.0x</td><td>80% @ 1.5x</td><td>50% @ 1.0x</td><td class="red">25% @ 0.5x</td></tr>
-    <tr><td class="green">Low Vol</td><td>85% @ 1.5x</td><td>70% @ 1.2x</td><td>40% @ 0.8x</td><td class="red">20% @ 0.3x</td></tr>
-    <tr><td class="accent">Normal Vol</td><td>70% @ 1.0x</td><td>55% @ 0.8x</td><td>30% @ 0.5x</td><td class="red">15% @ 0.2x</td></tr>
-    <tr><td class="red">High Vol</td><td>50% @ 0.5x</td><td>35% @ 0.3x</td><td>20% @ 0.2x</td><td class="red">10% @ 0.0x</td></tr>
-    <tr><td class="red">Extreme Vol</td><td colspan="4" style="text-align: center; color: #e03131;">0% @ 0.0x — lending only</td></tr>
-  </table>
-  <p style="margin-top: 20px; color: #888;">
-    Signals can only <span class="accent">reduce</span> deployment, never increase it.<br>
-    Emergency rebalance triggers on 30%+ deployment drops.
-  </p>
-</div>
-
-<!-- Slide 5: Yogi vs Traditional Vaults Comparison -->
-<div class="slide" id="slide-5">
-  <h2>Yogi vs Traditional Vaults: Same Alpha, Smarter Risk</h2>
-  <table class="fade-item" style="margin-top: 20px; font-size: 22px;">
-    <tr><th>Scenario</th><th>Vol-Only</th><th>Yogi</th></tr>
-    <tr><td>Low vol, no stress</td><td>100% @ 2.0x</td><td>100% @ 2.0x <span class="dim">(same)</span></td></tr>
-    <tr><td>Low vol, OI shifting</td><td class="red">100% @ 2.0x (blind)</td><td class="green">80% @ 1.5x (cautious)</td></tr>
-    <tr><td>Low vol, liquidation cascade</td><td class="red">100% @ 2.0x (blind)</td><td class="green">25% @ 0.5x (defensive)</td></tr>
-    <tr><td>High vol, critical signals</td><td class="red">50% @ 0.5x (blind)</td><td class="green">10% @ 0.0x (shut down)</td></tr>
-  </table>
-  <p style="margin-top: 30px; color: #888;">
-    Traditional vaults see vol. <span class="accent">Yogi sees vol AND danger signals.</span><br>
-    In calm markets: identical performance. In stress: Yogi protects capital.
-  </p>
-</div>
-
-<!-- Slide 6: Backtest Results -->
+<!-- Slide 6: Regime Engine -->
 <div class="slide" id="slide-6">
-  <h2>Backtest: 21% Lower Max Drawdown</h2>
-  <h3>32 days (Feb 13 – Mar 16, 2026) — comparative</h3>
-  <div class="stats-grid fade-item" style="margin-top: 20px;">
-    <div class="stat-card"><div class="stat-label">YOGI APY</div><div class="stat-value" style="color: #40c057;">5.89%</div><div class="stat-label">Baseline: 7.06%</div></div>
-    <div class="stat-card"><div class="stat-label">MAX DRAWDOWN</div><div class="stat-value" style="color: #40c057;">0.04%</div><div class="stat-label">Baseline: 0.05% (-21%)</div></div>
-    <div class="stat-card"><div class="stat-label">SHARPE</div><div class="stat-value">17.60</div><div class="stat-label">Baseline: 17.64</div></div>
-    <div class="stat-card"><div class="stat-label">COSTS</div><div class="stat-value">$312</div><div class="stat-label">Baseline: $371 (-16%)</div></div>
-    <div class="stat-card"><div class="stat-label">UNIT TESTS</div><div class="stat-value">38</div><div class="stat-label">6 test suites</div></div>
-    <div class="stat-card"><div class="stat-label">TARGET APY</div><div class="stat-value">20-30%</div><div class="stat-label">Normal conditions</div></div>
-  </div>
+  <h2>Regime Engine: Vol &times; Signals &rarr; Deployment</h2>
+  <table class="fade-item" style="margin-top: 20px; font-size: 22px;">
+    <tr><th></th><th>CLEAR</th><th>LOW</th><th>HIGH</th><th style="color: #e03131;">CRITICAL</th><th style="color: #f0b040;">Tilt</th></tr>
+    <tr><td class="green">Very Low Vol</td><td>100% @ 2.0x</td><td>95% @ 1.5x</td><td>70% @ 1.0x</td><td class="red">40% @ 0.5x</td><td class="accent">10%</td></tr>
+    <tr><td class="green">Low Vol</td><td>95% @ 1.5x</td><td>85% @ 1.2x</td><td>55% @ 0.8x</td><td class="red">30% @ 0.3x</td><td class="accent">10%</td></tr>
+    <tr><td class="accent">Normal Vol</td><td>85% @ 1.0x</td><td>70% @ 0.8x</td><td>45% @ 0.5x</td><td class="red">20% @ 0.2x</td><td class="accent">7%</td></tr>
+    <tr><td class="red">High Vol</td><td>75% @ 0.8x</td><td>55% @ 0.5x</td><td>30% @ 0.3x</td><td class="red">15% @ 0.0x</td><td>5%</td></tr>
+    <tr><td class="red">Extreme</td><td colspan="4" style="text-align: center; color: #e03131;">0% @ 0.0x &mdash; Drift auto-lending only</td><td class="red">0%</td></tr>
+  </table>
   <p style="margin-top: 20px; color: #888;">
-    Calm period — no HIGH/CRITICAL signals fired. Yogi's real edge shows in stress.<br>
-    <span class="accent">Trade-off: 1.2% APY for 21% lower drawdown. In a crash, this flips.</span>
+    DN is safer than directional &rarr; higher deployment at same risk.<br>
+    <span class="accent">Tilt goes to 0% at HIGH/CRITICAL = pure delta-neutral, zero price exposure.</span>
   </p>
 </div>
 
-<!-- Slide 7: Architecture -->
+<!-- Slide 7: Live Performance -->
 <div class="slide" id="slide-7">
-  <h2>Architecture: 9 Keeper Modules</h2>
-  <div style="display: flex; gap: 20px; margin-top: 20px; width: 1400px;">
-    <div class="fade-item" style="flex: 1;">
-      <div class="sig-card" style="text-align: left; border-color: #f0b040;">
-        <div style="color: #f0b040; font-size: 14px;">YOGI INTELLIGENCE (NEW)</div>
-        <div style="font-size: 15px; margin-top: 8px; line-height: 1.8; color: #ccc;">
-          &#9656; Signal Detector (4 anomaly dimensions)<br>
-          &#9656; Regime Engine (5x4 deployment matrix)
-        </div>
-      </div>
-      <div class="sig-card" style="text-align: left; border-color: #333; margin-top: 10px;">
-        <div style="color: #8b9dc3; font-size: 14px;">PROVEN BASE (DRIFT INTEGRATION)</div>
-        <div style="font-size: 15px; margin-top: 8px; line-height: 1.8; color: #ccc;">
-          &#9500; Imbalance Detector (OI + premium + funding)<br>
-          &#9500; Leverage Controller (Parkinson vol)<br>
-          &#9500; Cost Gate (maker rebates, 1.6 bps RT)<br>
-          &#9500; Position Manager (bidirectional)<br>
-          &#9500; Health Monitor (30s)<br>
-          &#9500; Funding Scanner<br>
-          &#9492; Yield Stacker
+  <h2>Live on Solana Mainnet</h2>
+  <h3>Deployed March 20, 2026 &mdash; running continuously</h3>
+  <div class="stats-grid fade-item" style="margin-top: 20px;">
+    <div class="stat-card"><div class="stat-label">BEAR MARKET P&L</div><div class="stat-value" style="color: #40c057;">+$8.08</div><div class="stat-label">+1.61% during -7.4% BTC week</div></div>
+    <div class="stat-card"><div class="stat-label">MAX DRAWDOWN</div><div class="stat-value" style="color: #40c057;">$0.00</div><div class="stat-label">Zero drawdown, entire period</div></div>
+    <div class="stat-card"><div class="stat-label">CURRENT MODE</div><div class="stat-value">DN</div><div class="stat-label">Dynamic tilted delta-neutral</div></div>
+    <div class="stat-card"><div class="stat-label">DN MARKETS</div><div class="stat-value">3</div><div class="stat-label">SOL, BTC, ETH on Drift spot</div></div>
+    <div class="stat-card"><div class="stat-label">TARGET APY</div><div class="stat-value">10-20%</div><div class="stat-label">DN funding + tilt + auto-lending</div></div>
+    <div class="stat-card"><div class="stat-label">UNIT TESTS</div><div class="stat-value">38</div><div class="stat-label">6 test suites, all passing</div></div>
+  </div>
+  <p style="margin-top: 20px; color: #888;">
+    On-chain verifiable: vault <span class="accent">BFDTTG8n...</span> | Drift user <span class="accent">HURzSV...</span>
+  </p>
+</div>
+
+<!-- Slide 8: Complementary Portfolio -->
+<div class="slide" id="slide-8">
+  <h2>Complementary Portfolio: Yogi + Kodiak</h2>
+  <p style="margin-bottom: 20px; color: #ccc;">Two vaults, uncorrelated funding sources, zero asset overlap.</p>
+  <div class="two-col fade-item">
+    <div>
+      <div class="sig-card" style="border-color: #f0b040; text-align: left;">
+        <div style="color: #f0b040; font-size: 20px; font-weight: bold; margin-bottom: 10px;">YOGI (Drift) &mdash; 60%</div>
+        <div style="font-size: 18px; line-height: 2; color: #ccc;">
+          DN on SOL, BTC, ETH<br>
+          Funding: broad crypto sentiment<br>
+          Profile: volatile, high peaks<br>
+          Strength: multi-asset diversification
         </div>
       </div>
     </div>
-    <div class="fade-item" style="flex: 1;">
-      <div class="sig-card" style="text-align: left; border-color: #333;">
-        <div style="color: #40c057; font-size: 14px;">RISK CONTROLS</div>
-        <div style="font-size: 15px; margin-top: 8px; line-height: 1.8; color: #ccc;">
-          &#x2022; Signal scan: every 5 minutes<br>
-          &#x2022; Health check: every 30 seconds<br>
-          &#x2022; Emergency rebalance on regime shift<br>
-          &#x2022; CRITICAL signal: force reduce<br>
-          &#x2022; Cautious mode: 40% min signal<br>
-          &#x2022; Drawdown: 3% reduce / 5% close<br>
-          &#x2022; Negative equity: emergency close
-        </div>
-      </div>
-      <div class="sig-card" style="text-align: left; border-color: #333; margin-top: 10px;">
-        <div style="color: #5fb3d4; font-size: 14px;">CONFIGURABLE</div>
-        <div style="font-size: 15px; margin-top: 8px; color: #ccc;">
-          All thresholds, matrices, and<br>
-          weights in STRATEGY_CONFIG.<br>
-          No hardcoded magic numbers.
+    <div>
+      <div class="sig-card" style="border-color: #5fb3d4; text-align: left;">
+        <div style="color: #5fb3d4; font-size: 20px; font-weight: bold; margin-bottom: 10px;">KODIAK (Hyperliquid) &mdash; 40%</div>
+        <div style="font-size: 18px; line-height: 2; color: #ccc;">
+          DN on HYPE only<br>
+          Funding: ecosystem conviction<br>
+          Profile: stable, moderate<br>
+          Strength: persistent positive funding
         </div>
       </div>
     </div>
   </div>
+  <table class="fade-item" style="margin-top: 25px; width: 1000px;">
+    <tr><th>Condition</th><th>Yogi</th><th>Kodiak</th><th class="accent">Blended</th></tr>
+    <tr><td>Bull</td><td>~20%</td><td>~8%</td><td class="accent">~15%</td></tr>
+    <tr><td>Neutral</td><td>~12%</td><td>~6%</td><td class="accent">~10%</td></tr>
+    <tr><td>Bear stress</td><td>~5%</td><td>~5%</td><td class="accent">~5%</td></tr>
+  </table>
 </div>
 
-<!-- Slide 8: CTA -->
-<div class="slide title-slide" id="slide-8">
+<!-- Slide 9: PerpU — Education -->
+<div class="slide" id="slide-9">
+  <h2>PerpU: Learn Perp DEX</h2>
+  <p style="margin-bottom: 30px; color: #ccc;">If we want institutions on Drift, we need education &mdash; not just vaults.</p>
+  <div class="signal-box fade-item">
+    <div class="sig-card" style="border-color: #f0b040;">
+      <div style="color: #f0b040; font-size: 20px; font-weight: bold;">For Institutions</div>
+      <div style="font-size: 16px; color: #ccc; margin-top: 10px;">Why Drift for yield?<br>DN mechanics explained<br>Risk framework</div>
+    </div>
+    <div class="sig-card" style="border-color: #5fb3d4;">
+      <div style="color: #5fb3d4; font-size: 20px; font-weight: bold;">For Developers</div>
+      <div style="font-size: 16px; color: #ccc; margin-top: 10px;">Drift SDK tutorials<br>Vault development<br>Keeper architecture</div>
+    </div>
+    <div class="sig-card" style="border-color: #40c057;">
+      <div style="color: #40c057; font-size: 20px; font-weight: bold;">Cross-Venue Insight</div>
+      <div style="font-size: 16px; color: #ccc; margin-top: 10px;">Drift vs Hyperliquid vs GRVT<br>Honest comparison<br>Built from real experience</div>
+    </div>
+  </div>
+  <p style="margin-top: 25px; color: #888;">
+    <span class="accent">"To understand something properly, you need to see outside of it."</span><br>
+    We built on three venues. PerpU shares what we learned.
+  </p>
+</div>
+
+<!-- Slide 10: CTA -->
+<div class="slide title-slide" id="slide-10">
   <h1>Yogi Vault</h1>
   <div style="margin-top: 30px;">
-    <table style="width: 1000px; margin: 0 auto;">
-      <tr><td class="dim">Target APY</td><td class="accent">20-30% (normal conditions)</td></tr>
-      <tr><td class="dim">Base Asset</td><td>USDC</td></tr>
-      <tr><td class="dim">Edge</td><td>Drift arbitrage + forward-looking signal detection</td></tr>
-      <tr><td class="dim">Revenue</td><td>Funding + premium convergence + OI + LST + lending</td></tr>
-      <tr><td class="dim">Intelligence</td><td>4-dimension anomaly detector, 5x4 regime matrix</td></tr>
-      <tr><td class="dim">Tests</td><td>38 unit tests (6 suites) + comparative backtest</td></tr>
-      <tr><td class="dim">Bear market</td><td>Proactive risk reduction via signal detection</td></tr>
+    <table style="width: 1100px; margin: 0 auto;">
+      <tr><td class="dim">Strategy</td><td class="accent">Dynamic tilted delta-neutral on Drift</td></tr>
+      <tr><td class="dim">Edge</td><td>Multi-asset DN (SOL/BTC/ETH) + 5D signal detection + dynamic tilt</td></tr>
+      <tr><td class="dim">Target APY</td><td class="accent">10-20% with near-zero price risk</td></tr>
+      <tr><td class="dim">Live proof</td><td>Zero drawdown through -7.4% BTC week</td></tr>
+      <tr><td class="dim">Ecosystem</td><td>Complementary portfolio (Yogi + Kodiak) + PerpU education</td></tr>
+      <tr><td class="dim">Thesis</td><td>Drift is institutional yield infrastructure, not just HFT</td></tr>
     </table>
   </div>
   <p style="margin-top: 40px;"><span class="accent">github.com/psyto/yogi</span></p>
@@ -224,7 +270,7 @@
 <div class="progress" id="progress"></div>
 <div class="slide-number" id="slide-number"></div>
 <script>
-const T=8,D=10000,F=500;let c=0;
+const T=10,D=18000,F=500;let c=0;
 function show(n){document.querySelectorAll('.slide').forEach(s=>s.classList.remove('active'));const s=document.getElementById(`slide-${n+1}`);if(s){s.classList.add('active');s.querySelectorAll('.fade-item').forEach((e,i)=>setTimeout(()=>e.classList.add('visible'),F*(i+1)));}document.getElementById('progress').style.width=`${((n+1)/T)*100}%`;document.getElementById('slide-number').textContent=`${n+1} / ${T}`;}
 function next(){c++;if(c>=T)return;show(c);if(c<T-1)setTimeout(next,D);}
 show(0);setTimeout(next,D);

@@ -1,76 +1,110 @@
 # Yogi Vault — Voiceover Script
 
-**Total duration: 80 seconds (8 slides x 10 seconds)**
+**Total duration: ~3 minutes (10 slides x 18 seconds)**
 
 ---
 
-## Slide 1: Title (0:00 - 0:10)
+## Slide 1: Title (0:00 - 0:18)
 
-> Yogi Vault. A Drift basis trade strategy with intelligent signal detection.
-> Smarter than the average bear market vault.
-
----
-
-## Slide 2: The Problem (0:10 - 0:20)
-
-> Most basis trade vaults scale leverage by volatility alone.
-> They're reactive — they reduce exposure after damage is already done.
-> In a calm market with building contagion, they stay fully deployed at two-x.
-> Blind to the approaching storm.
+> Yogi Vault. Dynamic tilted delta-neutral on Drift.
+> We built the same strategy on Drift and Hyperliquid.
+> This is what we learned — and why Drift is where institutional yield belongs.
 
 ---
 
-## Slide 3: Intelligence Layer (0:20 - 0:30)
+## Slide 2: The Misconception (0:18 - 0:36)
 
-> Yogi monitors four Drift-specific anomaly dimensions every five minutes.
+> Everyone says Drift is for high-frequency trading, not yield farming.
+> Hyperliquid is where the vaults are. Liminal has thirty million. Harmonix has six million.
+> But institutions are asking a different question:
+> where can I park capital for yield with zero price risk?
+> We didn't accept the narrative. We built on both platforms to find out.
+
+---
+
+## Slide 3: We Built on Both (0:36 - 0:54)
+
+> Yogi on Drift. Kodiak on Hyperliquid. Same strategy brain, same signals, same tilt.
+> On Drift: delta-neutral on SOL, BTC, and ETH. Three markets, native lending, continuous funding, maker rebates.
+> On Hyperliquid: delta-neutral on HYPE only. One market, needs a bridge for lending, hourly settlement.
+> Drift's composability makes multi-asset delta-neutral surprisingly easy.
+> No Jupiter. No bridges. Just spot order plus perp order in one account.
+
+---
+
+## Slide 4: Delta-Neutral Explained (0:54 - 1:12)
+
+> Delta-neutral means buy spot and short perp on the same asset.
+> Price goes up — spot gains, perp loses. Net zero.
+> Price goes down — spot loses, perp gains. Net zero.
+> Profit comes purely from funding rates. Zero price risk.
+> Yogi adds a dynamic tilt: the perp short is slightly larger than the spot buy.
+> Ten percent tilt in calm markets for extra yield. Zero percent in stress for pure protection.
+> No other Drift vault adjusts its hedge ratio in real time based on signals.
+
+---
+
+## Slide 5: 5D Signal Detection (1:12 - 1:30)
+
+> Yogi monitors five anomaly dimensions every five minutes.
 > OI shifts detect mass repositioning before squeezes.
-> Liquidation cascades catch forced margin calls through OI drops.
+> Liquidation cascades catch forced margin calls.
 > Funding volatility signals regime transitions.
-> And spread blow-outs reveal thin liquidity and stress.
+> Spread blow-outs reveal thin liquidity.
+> And the fifth dimension: cross-venue funding comparison against Binance and Bybit.
+> When Drift BTC funding is plus one-fifty percent and Binance is plus five, Yogi sees the divergence.
 
 ---
 
-## Slide 4: Regime Engine (0:30 - 0:40)
+## Slide 6: Regime Engine (1:30 - 1:48)
 
-> The regime engine combines vol regime with signal severity into a deployment decision.
-> A five-by-four matrix maps every combination to a deployment percentage and leverage cap.
-> Signals can only reduce deployment, never increase it.
-> If deployment drops thirty percent in one cycle, an emergency rebalance triggers immediately.
-
----
-
-## Slide 5: Traditional Vaults vs Yogi (0:40 - 0:50)
-
-> In calm markets, Yogi performs identically to traditional vaults.
-> But when OI starts shifting or liquidations cascade, Yogi pulls back —
-> from one hundred percent at two-x down to twenty-five percent at half-x.
-> Traditional vaults stay fully deployed. Blind.
-> Same alpha source. Smarter risk management.
+> The regime engine combines vol regime with signal severity.
+> A five-by-four matrix maps every combination to deployment percentage, leverage, and tilt.
+> Signals can only reduce exposure, never increase it.
+> Because delta-neutral has structural price protection, deployment is higher than directional — seventy-five percent in high vol versus fifty percent.
+> At critical signals, tilt drops to zero. Pure delta-neutral. Zero price exposure.
+> Emergency rebalance triggers on thirty-percent deployment drops.
 
 ---
 
-## Slide 6: Backtest (0:50 - 1:00)
+## Slide 7: Live Performance (1:48 - 2:06)
 
-> Thirty-two day comparative backtest.
-> Yogi achieved twenty-one percent lower max drawdown and sixteen percent lower trading costs.
-> The trade-off: one-point-two percent less APY in a calm period.
-> But in a real stress event, that relationship flips — Yogi avoids the drawdown entirely.
-> Target APY in normal conditions: twenty to thirty percent.
-
----
-
-## Slide 7: Architecture (1:00 - 1:10)
-
-> Nine keeper modules. Two are new: the signal detector and regime engine.
-> Seven are battle-tested Drift integration modules — imbalance detector, cost gate, position manager.
-> All thresholds and matrices are configurable. No hardcoded magic numbers.
-> Thirty-eight unit tests across six suites. All passing.
+> Yogi is live on Solana mainnet since March twentieth.
+> During a week where BTC dropped seven-point-four percent, Yogi delivered plus one-point-six percent with zero drawdown.
+> Now running in dynamic tilted delta-neutral mode across SOL, BTC, and ETH.
+> Target APY: ten to twenty percent with near-zero price risk.
+> Thirty-eight unit tests. All on-chain and verifiable.
 
 ---
 
-## Slide 8: CTA (1:10 - 1:20)
+## Slide 8: Complementary Portfolio (2:06 - 2:24)
 
-> Yogi Vault. Drift arbitrage plus forward-looking signal detection.
-> Five revenue sources. Four anomaly dimensions. One regime engine.
-> Built for the Ranger Build-A-Bear Hackathon. Main track plus Drift side track.
+> Yogi and Kodiak are complementary, not competing. Zero asset overlap.
+> HYPE doesn't exist on Drift. SOL, BTC, ETH spot doesn't exist on Hyperliquid.
+> Yogi harvests funding from broad crypto sentiment — volatile, with high peaks.
+> Kodiak harvests from HYPE ecosystem conviction — stable, persistent.
+> When Drift funding dips, HYPE typically holds. And vice versa.
+> Sixty-forty allocation. Ten to fifteen percent blended APY.
+
+---
+
+## Slide 9: PerpU — Education (2:24 - 2:42)
+
+> If we want institutions on Drift, we need education — not just vaults.
+> PerpU is a learning platform for perpetual DEXes.
+> It teaches why Drift's composability makes it the right platform for institutional yield.
+> Built from real experience — we built on Drift, Hyperliquid, and GRVT.
+> To understand something properly, you need to see outside of it.
+> PerpU shares what we learned.
+
+---
+
+## Slide 10: CTA (2:42 - 3:00)
+
+> Yogi Vault. Dynamic tilted delta-neutral on Drift.
+> Multi-asset DN. Five-dimension signal detection. Dynamic tilt.
+> Live on mainnet. Zero drawdown through a bear market.
+> Complementary portfolio with Kodiak. PerpU for ecosystem education.
+> Our thesis: Drift is institutional yield infrastructure, not just HFT.
+> We built on every alternative and came back to Drift.
 > github dot com slash psyto slash yogi.
