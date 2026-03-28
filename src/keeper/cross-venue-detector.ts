@@ -226,9 +226,9 @@ async function fetchDriftFunding(): Promise<Map<string, number>> {
     if (!body.success || !body.markets) return map;
 
     for (const m of body.markets) {
-      // Drift 24h rate is hourly, annualize: rate * 24 * 365 * 100
+      // Drift 24h rate is cumulative daily, annualize: rate * 365 * 100
       const rate24h = parseFloat(m.fundingRates["24h"]);
-      map.set(m.symbol, rate24h * 24 * 365 * 100);
+      map.set(m.symbol, rate24h * 365 * 100);
     }
   } catch {
     // Silently fail
