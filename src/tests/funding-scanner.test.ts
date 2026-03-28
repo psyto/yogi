@@ -20,7 +20,7 @@ const mockRates: FundingRateData[] = [
     rate7d: -0.0005,
     rate30d: -0.0003,
     rate1y: 0.0001,
-    annualizedPct: -876,
+    annualizedPct: -36.5, // -0.001 * 365 * 100
     openInterest: 0,
   },
   {
@@ -30,7 +30,7 @@ const mockRates: FundingRateData[] = [
     rate7d: 0.0015,
     rate30d: 0.001,
     rate1y: 0.0008,
-    annualizedPct: 1752,
+    annualizedPct: 73.0, // 0.002 * 365 * 100
     openInterest: 0,
   },
   {
@@ -40,7 +40,7 @@ const mockRates: FundingRateData[] = [
     rate7d: 0.004,
     rate30d: 0.003,
     rate1y: 0.002,
-    annualizedPct: 4380,
+    annualizedPct: 182.5, // 0.005 * 365 * 100
     openInterest: 0,
   },
   {
@@ -50,7 +50,7 @@ const mockRates: FundingRateData[] = [
     rate7d: -0.00005,
     rate30d: -0.0001,
     rate1y: 0.00001,
-    annualizedPct: 87.6,
+    annualizedPct: 3.65, // 0.0001 * 365 * 100
     openInterest: 0,
   },
 ];

@@ -48,7 +48,8 @@ export async function fetchAllFundingRates(): Promise<FundingRateData[]> {
       rate7d,
       rate30d,
       rate1y,
-      annualizedPct: rate24h * 24 * 365 * 100,
+      // rate24h from Drift stats API is cumulative daily rate, not hourly
+      annualizedPct: rate24h * 365 * 100,
       openInterest: 0,
     };
   });
