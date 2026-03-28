@@ -351,6 +351,34 @@ The 32-day period was **calm** — no HIGH or CRITICAL signals fired, and the ba
 4. **Single-keeper architecture** — No multi-reporter consensus. The keeper is a single point of trust for signal detection, running on AWS EC2 with pm2 auto-restart.
 5. **Tilt is not hedged** — The tilt portion (0-10%) is directional exposure. In a sudden crash, the tilt causes small losses proportional to tilt% × price move. Dynamic tilt mitigates this by going to 0% in stress.
 
+## Lessons Learned
+
+Building dynamic tilted DN on both Drift and Hyperliquid taught us hard lessons. We document them here because honesty about mistakes is more valuable than pretending they didn't happen.
+
+### Drift Spot ≠ Perp
+
+Drift's spot and perp positions use completely different data structures and precision. `getSpotPosition().scaledBalance` is not equivalent to `getPerpPosition().baseAssetAmount`. Our initial `closeDeltaNeutral` checked `scaledBalance` to detect spot holdings — it always returned zero, so spot was never sold on DN close. Orphaned BTC spot sat in the account for days before we discovered it. **Fix**: use `user.getTokenAmount(marketIndex)` for spot, and always sell using recorded size instead of querying position state.
+
+### Restart Path is Where Bugs Hide
+
+The keeper's main loop was well-tested. The restart/position-loading path was not. Every restart created orphaned positions because `loadExistingDnPositions` couldn't detect spot (same `scaledBalance` bug). Three restarts in quick succession to deploy fixes compounded the problem — each one closed the perp, failed to detect the spot, and opened a new DN. Result: ~$1.50 in unnecessary trading costs and a confusing equity picture. **Lesson**: test the restart path as carefully as the main loop. Batch fixes to minimize restarts.
+
+### Verify API Data Format
+
+Drift's stats API returns cumulative daily funding rates, not hourly. We multiplied by `24 × 365` (treating as hourly) instead of `365` (treating as daily). This 24x overestimate meant all funding displays showed inflated numbers for days — entry/exit thresholds were ineffective because even low funding exceeded the 5% APY minimum. **Fix**: validate API response format against documentation before building math on top of it.
+
+### Spot Sell ≠ Perp Close
+
+When cleaning up orphaned SOL positions, we ran a spot sell order on a perp long position. Result: created an accidental reverse DN (perp long + spot short) instead of closing. The cleanup made things worse. **Lesson**: always verify whether a position is spot or perp before closing. Use `placePerpOrder` with `reduceOnly` for perps, `placeSpotOrder` for spot.
+
+### Hyperliquid Rate Limits Scale with Volume
+
+Kodiak's HYPE DN was only $49 notional on a $220 account — generating minimal trading volume. The keeper's API polling (heartbeats, signal detection, funding scans) consumed the request budget faster than trading volume replenished it. When we tried to scale up the DN, the rate limit blocked the spot sell, leaving an orphaned position. **Lesson**: on Hyperliquid, capital must be large enough that trading volume supports the keeper's API usage. ~$500 minimum for comfortable operation.
+
+### DN Markets Must Be Filtered
+
+Kodiak's rebalance tried to open BTC and ETH DN on Hyperliquid — but only HYPE has a spot pair. Every cycle: attempt → slippage guard reject → capital goes to HyperLend instead of scaling up the HYPE DN. $170 sat idle for days earning 5% instead of 11%. **Fix**: filter new DN candidates to only coins with spot pair mappings (`PERP_TO_SPOT`).
+
 ## Implementation Details
 
 ### Technology
