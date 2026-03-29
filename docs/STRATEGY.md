@@ -383,6 +383,10 @@ The 24x funding rate bug (daily rate treated as hourly) was fixed in the funding
 
 After finding the cross-venue 24x bug, we deployed it immediately — which required a keeper restart. The restart didn't detect the existing BTC DN position (same `loadExistingDnPositions` bug), closed the old position, and opened a new one. Another $0.50+ in unnecessary trading costs. The cross-venue display was wrong but the DN logic was correct — the restart was unnecessary. **Lesson**: never restart for cosmetic or display-only fixes. Bundle them with the next required restart. Every restart risks orphaned positions and trading costs.
 
+### DN Legs Are Not Atomic
+
+The DN open function executes two sequential steps: buy spot, then short perp. If the first leg succeeds but the second fails (rate limit, insufficient margin, network error), you're left with unhedged spot exposure. The "unwind on failure" code tries to sell the spot back, but if the same issue blocks the unwind too, unhedged exposure accumulates. On Kodiak (Hyperliquid), this resulted in 10.65 HYPE sitting unhedged — nearly all capital in naked long exposure — because each failed reopen attempt added more spot without matching perp shorts. **Fix needed**: check execution prerequisites (rate limit headroom, margin availability) before attempting the first leg. Never buy spot unless confident the perp short will also succeed. On Drift (Yogi), this risk is lower because Solana transactions are faster and there's no API rate limit, but the principle applies to any two-leg execution.
+
 ### DN Markets Must Be Filtered
 
 Kodiak's rebalance tried to open BTC and ETH DN on Hyperliquid — but only HYPE has a spot pair. Every cycle: attempt → slippage guard reject → capital goes to HyperLend instead of scaling up the HYPE DN. $170 sat idle for days earning 5% instead of 11%. **Fix**: filter new DN candidates to only coins with spot pair mappings (`PERP_TO_SPOT`).
