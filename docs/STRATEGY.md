@@ -375,9 +375,21 @@ When cleaning up orphaned SOL positions, we ran a spot sell order on a perp long
 
 Kodiak's HYPE DN was only $49 notional on a $220 account — generating minimal trading volume. The keeper's API polling (heartbeats, signal detection, funding scans) consumed the request budget faster than trading volume replenished it. When we tried to scale up the DN, the rate limit blocked the spot sell, leaving an orphaned position. **Lesson**: on Hyperliquid, capital must be large enough that trading volume supports the keeper's API usage. ~$500 minimum for comfortable operation.
 
+### The Same Bug Hides in Multiple Places
+
+The 24x funding rate bug (daily rate treated as hourly) was fixed in the funding scanner but the **same bug existed in the cross-venue detector** — a completely separate file using the same API with the same wrong multiplier. The cross-venue detector showed Drift BTC at +1,758% when the real rate was +73%. This inflated all cross-venue divergence signals, making every market show `drift_high` at 100% confidence. **Lesson**: when you find a bug, grep the entire codebase for the same pattern. The same API misunderstanding will exist everywhere that API is used.
+
+### Don't Restart for Cosmetic Fixes
+
+After finding the cross-venue 24x bug, we deployed it immediately — which required a keeper restart. The restart didn't detect the existing BTC DN position (same `loadExistingDnPositions` bug), closed the old position, and opened a new one. Another $0.50+ in unnecessary trading costs. The cross-venue display was wrong but the DN logic was correct — the restart was unnecessary. **Lesson**: never restart for cosmetic or display-only fixes. Bundle them with the next required restart. Every restart risks orphaned positions and trading costs.
+
 ### DN Markets Must Be Filtered
 
 Kodiak's rebalance tried to open BTC and ETH DN on Hyperliquid — but only HYPE has a spot pair. Every cycle: attempt → slippage guard reject → capital goes to HyperLend instead of scaling up the HYPE DN. $170 sat idle for days earning 5% instead of 11%. **Fix**: filter new DN candidates to only coins with spot pair mappings (`PERP_TO_SPOT`).
+
+### Manual DN as Rate Limit Workaround
+
+When the Kodiak keeper's API rate limit prevented opening DN positions (spot buy succeeded, perp short blocked), we opened the DN manually through the Hyperliquid UI — buying HYPE spot and shorting HYPE perp by hand. The keeper then detected and tracked the manually opened position on restart. **Lesson**: the keeper doesn't have to open every position. Manual execution through the UI bypasses API rate limits. The keeper's value is monitoring, not just execution.
 
 ## Implementation Details
 
