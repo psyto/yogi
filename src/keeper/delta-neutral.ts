@@ -53,8 +53,11 @@ export const DN_MARKET_MAP: Record<string, { spotIndex: number; perpIndex: numbe
 };
 
 // Capital allocation for DN positions
-const SPOT_RATIO = 0.70;    // 70% to spot buy
-const MARGIN_RATIO = 0.30;  // 30% for perp margin
+// Drift's spot initial asset weight is 80-85%, meaning $1 of spot only counts
+// as $0.80-0.85 of collateral. At 70% spot ratio, the collateral loss from
+// converting USDC to spot can exceed free margin. 50% is safe for all assets.
+const SPOT_RATIO = 0.50;    // 50% to spot buy (reduced from 70% for Drift margin)
+const MARGIN_RATIO = 0.50;  // 50% for perp margin + collateral buffer
 
 // Minimum spot buffer per asset to prevent dust borrows.
 // Drift spot sells can leave tiny borrows (~0.000003) that inflate margin
