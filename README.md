@@ -174,7 +174,9 @@ The tilt is computed every rebalance cycle using signal severity, vol regime, an
 | Cost Calculator | `src/keeper/cost-calculator.ts` | Maker fee model — 1.6 bps round-trip cost |
 | Leverage Controller | `src/keeper/leverage-controller.ts` | Dynamic leverage scaling by vol regime |
 | Health Monitor | `src/keeper/health-monitor.ts` | 30-second health ratio and drawdown checks |
+| Emergency Decisions | `src/keeper/emergency-decisions.ts` | Pure decision logic for emergency actions — testable without DriftClient |
 | Position Manager | `src/keeper/position-manager.ts` | Directional position management (fallback mode) |
+| Slippage Guard | `src/keeper/slippage-guard.ts` | Checks order book depth before DN entry |
 | Keeper Loop | `src/keeper/index.ts` | Main event loop — DN rebalance, signals, regime, cross-venue |
 | Config | `src/config/` | Strategy parameters, signal thresholds, deployment matrices, DN settings |
 
@@ -234,7 +236,7 @@ Matrices are loosened vs pure directional because DN positions have partial pric
 
 | Parameter | Value |
 |-----------|-------|
-| Max drawdown | 3% reduce / 5% close all |
+| Max drawdown | 3% reduce / 5% close all (both DN and directional) |
 | Max leverage | 2x (regime-adaptive) |
 | Health check | Every 30 seconds |
 | Signal detection | Every 5 minutes |
@@ -300,13 +302,25 @@ $500 is proof-of-concept, not proof-of-scale. We know these risks exist. Here's 
 
 ## Testing
 
-**38 unit tests** across 6 test suites covering all strategy modules:
+**62 assertions** across 7 test suites covering strategy modules and emergency logic:
 
 ```bash
 npm test
 ```
 
-Tests validate: cost calculator (maker model), leverage controller, funding scanner (whitelist/blacklist), imbalance detector (signal scoring, direction logic, market filtering), regime engine (deployment matrix, emergency triggers, intelligence layer advantage), and drift signal detector (severity levels, formatting).
+| Suite | Module | Assertions | Coverage |
+|-------|--------|------------|----------|
+| cost-calculator | Cost gating, maker fee model | 10 | Trade economics, break-even, profitability |
+| leverage-controller | Vol regime classification | 6 | Regime boundaries, leverage caps |
+| funding-scanner | Market ranking, filtering | 4 | Whitelist/blacklist, rate sorting |
+| imbalance-detector | Signal scoring, direction | 8 | Composite signals, market filtering |
+| regime-engine | Deployment matrix | 6 | Vol×signal matrix, emergency rebalance triggers |
+| drift-signal-detector | Anomaly detection | 4 | Severity levels, formatting |
+| **emergency-decisions** | **Emergency action logic** | **24** | **Drawdown/health/signal priority chain, DN close regression, orphaned spot min order size** |
+
+The emergency-decisions suite includes regression tests for two production bugs discovered on 2026-03-30:
+- **Drawdown close_all must close DN positions** — the original code only closed directional positions, leaving DN positions stuck in an infinite emergency loop
+- **Orphaned spot below Drift min order size** — 0.0999 SOL (below 0.1 SOL minimum) caused repeated transaction failures on startup
 
 ## Demo & Dashboard
 
