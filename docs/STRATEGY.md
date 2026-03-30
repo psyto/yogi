@@ -395,6 +395,18 @@ Kodiak's rebalance tried to open BTC and ETH DN on Hyperliquid — but only HYPE
 
 When the Kodiak keeper's API rate limit prevented opening DN positions (spot buy succeeded, perp short blocked), we opened the DN manually through the Hyperliquid UI — buying HYPE spot and shorting HYPE perp by hand. The keeper then detected and tracked the manually opened position on restart. **Lesson**: the keeper doesn't have to open every position. Manual execution through the UI bypasses API rate limits. The keeper's value is monitoring, not just execution.
 
+### Spot Market Index Mapping Must Be Verified
+
+Drift's spot market indexes are: 0=USDC, 1=SOL, 2=mSOL, 3=wBTC, 4=wETH, 5=USDT. We assumed BTC=2 and ETH=3 — wrong. BTC is 3 (wBTC), ETH is 4 (wETH). The "BTC DN" was actually buying mSOL spot and hedging with BTC perp — a completely unhedged cross-asset position. The "ETH DN" was buying wBTC and hedging with ETH perp. **Fix**: verify all market indexes against on-chain data (`getSpotMarketAccounts()`), never assume sequential numbering.
+
+### Spot Precision Differs from Perp Precision
+
+Drift perps use 1e9 (`BASE_PRECISION`) for all markets. Spot markets have market-specific decimals: wETH=1e8, wBTC=1e8, SOL=1e9. Using `BASE_PRECISION` for a wETH spot order meant `0.169 * 1e9 = 169,000,000` was interpreted as 1.69 ETH (at 1e8 precision), not 0.169 ETH — a **10x oversized position**. This created a $2,542 USDC borrow on a $900 account. **Fix**: always read `spotMarket.decimals` and compute `Math.pow(10, decimals)` for each market. Never hardcode precision for spot orders.
+
+### Dust Borrows Block All DN Opens
+
+Drift spot sells can leave tiny borrows (~$0.0002) when fills aren't exact. The margin system treats any borrow as a liability, inflating margin requirements for ALL future spot orders. A $0.0002 SOL dust borrow blocked $900 from opening any DN position — the entire strategy was disabled by dust. **Fix**: maintain a permanent small deposit (dust buffer) on each DN-eligible spot market: 0.1 SOL, 0.0001 wBTC, 0.001 wETH. ~$17 one-time cost. The `ensureAllDustBuffers()` function runs on startup and preemptively buys buffers. This is Drift-specific — Hyperliquid doesn't have this issue because spot sells return exact USDC.
+
 ## Implementation Details
 
 ### Technology
