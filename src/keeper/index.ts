@@ -1,3 +1,5 @@
+import { writeFileSync } from "fs";
+import { join } from "path";
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import {
   DriftClient,
@@ -922,6 +924,39 @@ async function main(): Promise<void> {
       `Signal: ${severityLabels[currentSignals.severity]} | ` +
       `Next rebalance: ${Math.round((STRATEGY_CONFIG.rebalanceIntervalMs - (now - lastRebalance)) / 60000)}min`
     );
+
+    // Write metrics JSON for autopilot tweet system
+    try {
+      const metricsPath = join(process.cwd(), "metrics.json");
+      const metrics = {
+        timestamp: new Date().toISOString(),
+        equity,
+        positions: posCount,
+        dn_count: dnPositions.length,
+        dir_count: activePositions.length,
+        tilt_pct: dnPositions.length > 0 ? dnPositions[0].tiltPct : 0,
+        regime: currentRegime?.rebalanceMode ?? "unknown",
+        deployment_pct: currentRegime?.deploymentPct ?? 0,
+        leverage: currentRegime?.maxLeverage ?? 0,
+        signal_severity: severityLabels[currentSignals.severity],
+        signal_events: currentSignals.events.map(e => e.reason).slice(0, 5),
+        peak_equity: peakEquity,
+        drawdown_pct: peakEquity > 0 ? ((peakEquity - equity) / peakEquity) * 100 : 0,
+        starting_equity: 899,
+        days_running: Math.floor((Date.now() - new Date("2026-03-20").getTime()) / 86400000),
+        pnl_pct: ((equity - 899) / 899) * 100,
+        dn_positions: dnPositions.map(p => ({
+          market: p.marketName,
+          spotSize: p.spotSize,
+          perpSize: p.perpSize,
+          entryFunding: p.entryFundingRate,
+          tiltPct: p.tiltPct,
+        })),
+      };
+      writeFileSync(metricsPath, JSON.stringify(metrics, null, 2));
+    } catch (metricsErr) {
+      // Non-fatal — don't crash keeper for metrics
+    }
 
     await sleep(30_000);
   }
