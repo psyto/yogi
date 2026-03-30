@@ -14,7 +14,7 @@ Drift's hybrid AMM creates structural inefficiencies (OI imbalance, mark/oracle 
 
 **Revenue sources (live)**: Delta-neutral funding collection (spot buy + perp short) + dynamic tilt bonus + cross-venue intelligence. The keeper always positions on the collecting side — exits DN when funding drops below 5% APY threshold. Drift natively lends idle collateral to borrowers (1-5% APY auto-yield). External lending (Kamino/Marginfi for higher rates) and LST collateral (jitoSOL) are planned for post-hackathon.
 
-**Multi-asset DN**: Unlike single-asset DN vaults, Yogi can run parallel delta-neutral positions on SOL, BTC, and ETH — all of which have spot markets on Drift. This diversifies funding sources and reduces single-market risk.
+**Multi-asset DN**: Unlike single-asset DN vaults, Yogi can run parallel delta-neutral positions on SOL, BTC, ETH, POPCAT, and DRIFT — all of which have spot+perp markets on Drift. Drift has 20+ DN-eligible pairs, giving Yogi a long tail of Solana-native assets unavailable on any other venue. The keeper dynamically selects the highest-funding markets, rotating away from negative-funding blue chips into structural-positive community tokens when conditions warrant.
 
 ### Why Drift and Hyperliquid — Platform Selection
 
@@ -34,7 +34,7 @@ With Ethereum refocusing on L1 scaling, L2 platforms face existential uncertaint
 |---|---|---|
 | TVL | $1.1B | $4.5B |
 | Daily volume | $118M | $6.7B |
-| DN assets | SOL, BTC, ETH | HYPE only |
+| DN assets | SOL, BTC, ETH, POPCAT, DRIFT (5 markets) | HYPE only |
 | Composability | Spot + perp + lending in one account | Bridge required for lending |
 | L1 independence | Solana — no Ethereum dependency | Own L1 — no Ethereum dependency |
 
@@ -47,7 +47,7 @@ Neither platform is objectively better — they serve different purposes and [co
 ### Delta-Neutral Execution
 
 ```
-For each DN-eligible market (SOL, BTC, ETH):
+For each DN-eligible market (SOL, BTC, ETH, POPCAT, DRIFT):
 
 Capital for position = $X
 |
@@ -92,9 +92,10 @@ Total Vault Capital
 |
 +-- Deployed Capital (regime-adjusted % of total)
     |
-    +-- DN Position 1: SOL spot + SOL-PERP short
-    +-- DN Position 2: BTC spot + BTC-PERP short
-    +-- DN Position 3: ETH spot + ETH-PERP short
+    +-- DN Position 1: e.g., POPCAT spot + POPCAT-PERP short (84% APY)
+    +-- DN Position 2: e.g., DRIFT spot + DRIFT-PERP short (106% APY)
+    +-- DN Position 3: e.g., ETH spot + ETH-PERP short (when funding > 5%)
+    +-- (dynamically selected from 5 eligible: SOL, BTC, ETH, POPCAT, DRIFT)
     |
     Each position:
     +-- 70% → Spot buy (the hedge)
@@ -176,7 +177,7 @@ Matrices are loosened vs pure directional because DN positions have structural p
 ### DN Entry Criteria
 
 A market is eligible for a DN position when ALL of the following are met:
-1. Market is DN-eligible (SOL-PERP, BTC-PERP, or ETH-PERP with corresponding spot market)
+1. Market is DN-eligible (SOL-PERP, BTC-PERP, ETH-PERP, POPCAT-PERP, or DRIFT-PERP — all have spot+perp on Drift)
 2. Funding rate >= 5% APY (min threshold for DN profitability)
 3. Cost gate passes: expected funding over hold period > round-trip trading costs
 4. Regime allows deployment > 0% and leverage > 0
@@ -237,7 +238,7 @@ Monitored every **30 seconds** — 480x more frequent than the 4-hour rebalance.
 |-----------|-------|
 | DN capital split | 70% spot / 30% perp margin |
 | Max per market | 40% of total equity |
-| Max DN markets | 3 (SOL, BTC, ETH) |
+| Max DN markets | 3 simultaneous (from 5 eligible: SOL, BTC, ETH, POPCAT, DRIFT) |
 | Max leverage | 2x (hard ceiling) |
 | Min funding APY | 5% to open DN position |
 | Max tilt | 10% (dynamic, 0% in stress) |
@@ -252,7 +253,8 @@ $500 is proof-of-concept, not proof-of-scale. We know these risks exist. Here's 
 | **Tilt exposure in flash pumps** | At 10% tilt, the perp short exceeds spot by 10%. A 15% price pump in <5 min (between signal detection cycles) creates ~1.5% portfolio loss on the unhedged portion before `computeDynamicTilt` reduces to 0%. The 5-min detection cycle is the bottleneck — signals are accurate but not fast enough for flash moves. | Medium | Cap `MAX_TILT_PCT` at 5% for AUM > $500K (halves worst-case tilt loss to ~0.75%). Add a 1-minute fast-path price check: if any DN asset moves >3% in 1 min, force tilt to 0% immediately without waiting for full signal pipeline. WebSocket price subscription for sub-minute detection (post-hackathon). |
 | **Single keeper SPOF** | One `tsx` process on one EC2 instance (us-east-1). pm2 handles process crashes with auto-restart + `pm2 startup` for reboot. But: AZ outage, OOM kill, or RPC endpoint failure leaves positions unmanaged. During a CRITICAL event, stale tilt and leverage persist until restart. Position loader reconstructs DN pairs from on-chain state, but the gap between failure and recovery is unhedged. | High | Current: pm2 auto-restart + position loader covers 90% of failures (process crash, reboot). Planned: multi-region keeper (us-east-1 + eu-west-1) with distributed lock (Redis/DynamoDB) for leader election. Heartbeat watchdog: if no heartbeat for 2 min, secondary keeper takes over. External health endpoint for uptime monitoring (e.g., BetterUptime). |
 | **Self-impact on Drift AMM** | Larger DN positions move Drift's AMM pricing. Own spot buys push mark price up; own perp shorts push it down. This creates artificial mark/oracle divergence that triggers spread blow-out signals (false positives) and delta drift rebalances (unnecessary churn). At $1M+, own orders are a non-trivial fraction of Drift's AMM depth. | Medium | Track own-order market impact by comparing pre/post-order mark prices. Widen `DELTA_DRIFT_THRESHOLD` from 5% to 8% at scale to absorb self-induced drift. Use post-only limit orders above $100K to avoid taker impact. Exclude own-order-induced spread from signal detection. |
-| **Funding rate compression** | DN strategy = net short. More DN capital on Drift = more aggregate short interest = funding rates compress toward zero. The strategy partially erodes its own alpha at scale. With $1M+ in DN shorts across SOL/BTC/ETH, Yogi's own positions visibly affect Drift's funding rate calculation. | Low-Medium | Multi-asset DN distributes short pressure across 3 markets (vs single-asset). Cross-venue detector catches compression early: if Drift funding converges toward CEX rates, the edge is shrinking. Hard floor: exit DN when funding < 5% APY (`MIN_FUNDING_APY_THRESHOLD`). Implement vault capacity cap at $5M until Drift spot market depth grows. |
+| **Funding rate compression** | DN strategy = net short. More DN capital on Drift = more aggregate short interest = funding rates compress toward zero. The strategy partially erodes its own alpha at scale. With $1M+ in DN shorts across SOL/BTC/ETH, Yogi's own positions visibly affect Drift's funding rate calculation. | Low-Medium | Multi-asset DN distributes short pressure across 5 markets (vs single-asset). Cross-venue detector catches compression early: if Drift funding converges toward CEX rates, the edge is shrinking. Hard floor: exit DN when funding < 5% APY (`MIN_FUNDING_APY_THRESHOLD`). Implement vault capacity cap at $5M until Drift spot market depth grows. |
+| **Small-cap DN liquidity** | POPCAT ($47M mcap) and DRIFT ($39M mcap) have thin spot books on Drift. At current AUM ($900), trades fill easily. At $50K+, spot slippage on POPCAT/DRIFT would exceed the 1.5% guard. Meme coins can also experience sudden liquidity withdrawal during panics. | Medium at scale | Slippage guard (1.5% max) rejects entries on thin books. At scale, reduce max per market for small caps. The keeper dynamically rotates to the highest-funding eligible market — if POPCAT/DRIFT thin out, it shifts to SOL/BTC/ETH. |
 
 **Scaling roadmap**:
 - **$500-$50K** (current): Architecture works as-is. No execution changes needed.
@@ -271,7 +273,7 @@ $500 is proof-of-concept, not proof-of-scale. We know these risks exist. Here's 
 - **No leverage looping** — No borrowing against collateral recursively
 - **No DEX LP** — No impermanent loss exposure
 - **No yield-bearing stables** — No circular yield dependencies
-- **No illiquid altcoins** — Only SOL/BTC/ETH with Drift spot markets
+- **No illiquid altcoins** — Only assets with both spot and perp on Drift (SOL, BTC, ETH, POPCAT, DRIFT). Slippage guard rejects entries where spot depth is insufficient.
 - **No fixed leverage** — Leverage adapts to vol AND signals
 - **No fixed tilt** — Tilt adapts to signals, vol, and funding direction
 - **No blind deployment** — Signal detector prevents full exposure during building stress
@@ -305,12 +307,12 @@ $500 is proof-of-concept, not proof-of-scale. We know these risks exist. Here's 
 
 Yogi is designed to work alongside [Kodiak](https://github.com/psyto/kodiak) (Hyperliquid). Together they harvest funding from uncorrelated sources:
 
-- **Yogi** (SOL, BTC, ETH on Drift) — funding driven by broad crypto market sentiment. Volatile, with high peaks in bull markets. Multi-asset diversification reduces single-market risk.
+- **Yogi** (SOL, BTC, ETH, POPCAT, DRIFT on Drift) — two funding profiles in one vault: blue chips (BTC/SOL/ETH, cyclical funding) + Solana natives (POPCAT/DRIFT, structurally positive funding from community conviction). When blue-chip funding flips negative, the keeper rotates to POPCAT/DRIFT.
 - **Kodiak** (HYPE on Hyperliquid) — funding driven by Hyperliquid ecosystem conviction. HYPE holders are structurally long-biased, creating persistent positive funding regardless of broader market conditions.
 
-**Why complementary:** BTC/SOL/ETH funding is cyclical and can flip negative during bear stress. HYPE funding stays positive because ecosystem believers don't sell. When Drift funding dips, Hyperliquid HYPE typically holds — and vice versa.
+**Why complementary:** BTC/SOL/ETH funding is cyclical and can flip negative during bear stress. POPCAT/DRIFT/HYPE funding stays positive because ecosystem believers don't sell. Yogi's Solana-native tokens and Kodiak's HYPE are uncorrelated — different ecosystems, different conviction bases.
 
-**Recommended allocation:** 60% Yogi / 40% Kodiak. Yogi gets more due to 3 DN markets vs Kodiak's 1, providing better capital absorption and diversification.
+**Recommended allocation:** 60% Yogi / 40% Kodiak. Yogi gets more due to 5 DN markets vs Kodiak's 1, providing better capital absorption and diversification.
 
 **Blended estimate:** 10-15% APY in normal conditions, 5% floor in stress (both vaults earn lending yield even when DN positions are closed).
 

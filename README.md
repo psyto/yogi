@@ -29,7 +29,7 @@ Drift and Hyperliquid are both **independent L1s** — no Ethereum dependency, n
 
 | | Drift (Yogi) | Hyperliquid (Kodiak) |
 |---|---|---|
-| DN-eligible assets | SOL, BTC, ETH (3 markets) | HYPE only (1 market) |
+| DN-eligible assets | SOL, BTC, ETH, POPCAT, DRIFT (5 markets) | HYPE only (1 market) |
 | Lending | Native — Drift auto-lends idle collateral | Bridge required to HyperEVM (HyperLend) |
 | Funding settlement | Continuous | Hourly |
 | Maker fees | -0.2 bps (rebate — you earn) | 1.5 bps (you pay) |
@@ -142,7 +142,9 @@ The tilt is computed every rebalance cycle using signal severity, vol regime, an
 
 6. **Regime Discipline** — vol at 57%? Yogi goes cautious (55% deployed, 0.5x leverage, 0% tilt). Not because it's told to, but because the deployment matrix says high vol + signals = protect capital.
 
-7. **Multi-Asset DN** — SOL, BTC, and ETH all have spot markets on Drift. Yogi can run DN on all three simultaneously. Kodiak (Hyperliquid) is limited to single-asset DN.
+7. **Multi-Asset DN** — SOL, BTC, ETH, POPCAT, and DRIFT all have spot+perp markets on Drift. Yogi can run DN on up to 3 simultaneously, dynamically selecting the highest-funding markets. Drift has 20+ DN-eligible pairs — a long tail of Solana-native assets unavailable on any other venue. Kodiak (Hyperliquid) is limited to single-asset DN on HYPE.
+
+8. **DN on DRIFT token** — Yogi is the only vault running delta-neutral on Drift's own token. When DRIFT holders are long-biased, the perp short collects funding. This is only possible on Drift — no CEX or other DEX has DRIFT spot+perp.
 
 **Every other vault shows a backtest. Yogi shows live mainnet performance through a -7.4% BTC drawdown with zero loss.**
 
@@ -185,8 +187,12 @@ The tilt is computed every rebalance cycle using signal severity, vol regime, an
 | Asset | Spot Market Index | Perp Market Index | DN Eligible |
 |-------|-------------------|-------------------|-------------|
 | SOL | 1 | 0 | Yes |
-| BTC | 2 | 1 | Yes |
-| ETH | 3 | 2 | Yes |
+| BTC | 3 (wBTC) | 1 | Yes |
+| ETH | 4 (wETH) | 2 | Yes |
+| POPCAT | 20 | 34 | Yes |
+| DRIFT | 15 | 30 | Yes |
+
+Drift has 20+ additional spot+perp pairs (JUP, WIF, PYTH, TRUMP, etc.) that could be added as DN candidates. The keeper dynamically selects the highest-funding markets from the eligible list.
 
 ## Regime Engine
 
@@ -243,10 +249,10 @@ Matrices are loosened vs pure directional because DN positions have partial pric
 | Health critical | Close all at 1.08 |
 | Signal CRITICAL | Force reduce + set tilt to 0% |
 | Max per market | 40% |
-| Max DN markets | 3 (SOL, BTC, ETH) |
+| Max DN markets | 3 simultaneous (from 5 eligible: SOL, BTC, ETH, POPCAT, DRIFT) |
 | Min funding APY | 5% to open DN position |
 | Delta drift threshold | 5% — rebalance legs if spot/perp diverge |
-| Max slippage per leg | 0.5% |
+| Max slippage per leg | 1.5% (raised for small-cap DN markets) |
 | DN capital split | 70% spot / 30% perp margin |
 | Negative equity | Emergency close all (both legs) |
 
@@ -417,13 +423,14 @@ Yogi pairs with [Kodiak](https://github.com/psyto/kodiak) (Hyperliquid) to form 
 
 | | Yogi (Drift) | Kodiak (Hyperliquid) |
 |---|---|---|
-| DN assets | SOL, BTC, ETH | HYPE |
-| Funding driver | Broad crypto market sentiment | Hyperliquid ecosystem conviction |
-| Funding profile | Volatile, high peaks (20-160% APY) | Stable, moderate (5-11% APY) |
-| Strength | Multi-asset diversification | Structural long bias = persistent funding |
+| DN assets | SOL, BTC, ETH, POPCAT, DRIFT (5 markets) | HYPE |
+| Funding driver | Broad crypto + Solana ecosystem conviction | Hyperliquid ecosystem conviction |
+| Funding profile | Mixed: blue chips (volatile) + Solana natives (stable 80-100% APY) | Stable, moderate (5-11% APY) |
+| Strength | Multi-asset diversification + Solana long tail | Structural long bias = persistent funding |
 
 **Why they complement:**
-- BTC/SOL/ETH funding is cyclical — spikes in bull markets, can flip negative in bear. Yogi earns most when crypto sentiment is strong.
+- BTC/SOL/ETH funding is cyclical — spikes in bull markets, can flip negative in bear.
+- POPCAT/DRIFT funding is structurally positive — community conviction keeps holders long, similar to HYPE on Hyperliquid. When blue-chip funding dips, Solana-native assets often still pay.
 - HYPE funding is structurally positive — HYPE holders are ecosystem believers who stay long. Kodiak earns steadily regardless of broader market.
 - When one source dips, the other typically holds. Natural diversification without correlation engineering.
 
@@ -454,15 +461,17 @@ Built for the [Ranger Build-A-Bear Hackathon](https://ranger.finance/build-a-bea
 
 **3. Dynamic tilt is novel technology** — no other Drift vault adjusts its hedge ratio in real time based on signals. Pure DN in stress, tilted for extra yield when safe.
 
-**4. Multi-asset DN on Drift** — SOL, BTC, and ETH simultaneously. Three uncorrelated funding sources in one vault. No other submission uses Drift's spot markets for DN.
+**4. Multi-asset DN on Drift** — SOL, BTC, ETH, POPCAT, and DRIFT simultaneously. Five DN-eligible markets from Drift's long tail of 20+ spot+perp pairs. The keeper dynamically rotates to the highest-funding markets. No other submission uses Drift's spot markets for DN.
 
-**5. 5D cross-venue intelligence** — comparing Drift funding against Binance and Bybit in real time. No other Drift vault does this.
+**5. DN on DRIFT token** — Yogi runs delta-neutral on Drift's own token. When DRIFT holders are long-biased, the perp short collects funding (~106% APY). This is only possible on Drift and demonstrates the protocol's unique composability.
 
-**6. Live mainnet performance, not backtests** — deployed March 20, running continuously. On-chain verifiable.
+**6. 5D cross-venue intelligence** — comparing Drift funding against Binance and Bybit in real time. No other Drift vault does this.
 
-**7. Ecosystem contribution** — Yogi isn't just a vault. [PerpU](https://github.com/psyto/perpu) is a learning platform that teaches why Drift is the right platform for institutional yield. Vault + education = ecosystem growth.
+**7. Live mainnet performance, not backtests** — deployed March 20, running continuously. On-chain verifiable.
 
-**8. Production-ready** — Voltr integration, delegate trading, position loading on restart, 30-second health monitoring. Ready for $500K seeding on day one.
+**8. Ecosystem contribution** — Yogi isn't just a vault. [PerpU](https://github.com/psyto/perpu) is a learning platform that teaches why Drift is the right platform for institutional yield. Vault + education = ecosystem growth.
+
+**9. Production-ready** — Voltr integration, delegate trading, position loading on restart, 30-second health monitoring, 62 unit tests with regression coverage. Ready for $500K seeding on day one.
 
 ## License
 
