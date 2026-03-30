@@ -65,6 +65,7 @@ import {
   formatDnPosition,
   loadExistingDnPositions,
   computeDynamicTilt,
+  ensureAllDustBuffers,
   getDelta,
   getDeltaPct,
   getNotionalUsd,
@@ -837,6 +838,16 @@ async function main(): Promise<void> {
     console.error("Warning: Failed to load existing positions:", e);
   }
 
+  // Ensure dust buffers exist for all DN-eligible spot markets
+  // Prevents InsufficientCollateral errors from dust borrows
+  if (STRATEGY_CONFIG.deltaNeutralMode) {
+    try {
+      await ensureAllDustBuffers(driftClient);
+    } catch (e) {
+      console.error("Warning: Failed to ensure dust buffers:", e);
+    }
+  }
+
   // Initialize all systems
   await updateLeverage();
   await runSignalDetection();
@@ -946,9 +957,9 @@ async function main(): Promise<void> {
         days_running: Math.floor((Date.now() - new Date("2026-03-20").getTime()) / 86400000),
         pnl_pct: ((equity - 899) / 899) * 100,
         dn_positions: dnPositions.map(p => ({
-          market: p.marketName,
-          spotSize: p.spotSize,
-          perpSize: p.perpSize,
+          market: p.coin,
+          spotSize: p.spotSizeCoins,
+          perpSize: p.perpSizeCoins,
           entryFunding: p.entryFundingRate,
           tiltPct: p.tiltPct,
         })),

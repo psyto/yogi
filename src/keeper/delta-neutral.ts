@@ -54,6 +54,16 @@ export const DN_MARKET_MAP: Record<string, { spotIndex: number; perpIndex: numbe
 const SPOT_RATIO = 0.70;    // 70% to spot buy
 const MARGIN_RATIO = 0.30;  // 30% for perp margin
 
+// Minimum spot buffer per asset to prevent dust borrows.
+// Drift spot sells can leave tiny borrows (~0.000003) that inflate margin
+// requirements and block all future DN opens. A small permanent deposit
+// absorbs the dust. One-time cost ~$17 across all DN-eligible assets.
+const SPOT_DUST_BUFFERS: Record<number, number> = {
+  1: 100000000,    // SOL: 0.1 SOL (~$8) — min order size
+  2: 10000,        // BTC: 0.0001 BTC (~$7) — min order size
+  3: 100000,       // ETH: 0.001 ETH (~$2) — min order size
+};
+
 // --- Helpers ---
 
 export function getDelta(pos: DeltaNeutralPosition): number {
@@ -109,6 +119,82 @@ export function computeDynamicTilt(
   }
 
   return Math.round(tilt * 1000) / 1000;
+}
+
+// --- Dust Buffer Management ---
+
+/**
+ * Ensure a small spot deposit exists for a given market to prevent dust borrows.
+ * Drift spot sells can leave tiny borrows (~0.000003 tokens) that inflate
+ * margin requirements and block all DN opens. A permanent dust buffer absorbs this.
+ *
+ * Called before opening any DN position. One-time cost per asset.
+ */
+export async function ensureDustBuffer(
+  driftClient: DriftClient,
+  spotIndex: number,
+): Promise<void> {
+  const user = driftClient.getUser();
+  const bufferSize = SPOT_DUST_BUFFERS[spotIndex];
+  if (!bufferSize) return; // No buffer defined for this market
+
+  try {
+    const tokenAmount = user.getTokenAmount(spotIndex);
+    const balance = tokenAmount.toNumber();
+
+    if (balance < 0) {
+      // Dust borrow exists — buy minimum to clear it
+      console.log(`  Dust borrow detected on spot ${spotIndex}: ${balance}. Buying buffer to clear...`);
+      const tx = await driftClient.placeSpotOrder({
+        orderType: OrderType.MARKET,
+        marketType: MarketType.SPOT,
+        marketIndex: spotIndex,
+        direction: PositionDirection.LONG,
+        baseAssetAmount: new BN(bufferSize),
+      });
+      console.log(`  Dust buffer bought for spot ${spotIndex} | tx: ${tx}`);
+    } else if (balance === 0) {
+      // No position — buy buffer preemptively
+      console.log(`  No spot buffer for index ${spotIndex}. Buying preemptively...`);
+      const tx = await driftClient.placeSpotOrder({
+        orderType: OrderType.MARKET,
+        marketType: MarketType.SPOT,
+        marketIndex: spotIndex,
+        direction: PositionDirection.LONG,
+        baseAssetAmount: new BN(bufferSize),
+      });
+      console.log(`  Dust buffer bought for spot ${spotIndex} | tx: ${tx}`);
+    }
+    // If balance > 0, buffer already exists — do nothing
+  } catch (err) {
+    console.error(`  Failed to ensure dust buffer for spot ${spotIndex}:`, err);
+  }
+}
+
+/**
+ * Ensure dust buffers exist for ALL DN-eligible spot markets.
+ * Called once on keeper startup.
+ */
+export async function ensureAllDustBuffers(
+  driftClient: DriftClient,
+): Promise<void> {
+  console.log("--- Ensuring Dust Buffers ---");
+  for (const [marketName, mapping] of Object.entries(DN_MARKET_MAP)) {
+    const coin = marketName.replace("-PERP", "");
+    const user = driftClient.getUser();
+    try {
+      const tokenAmount = user.getTokenAmount(mapping.spotIndex);
+      const balance = tokenAmount.toNumber();
+      if (balance >= 0 && balance > 0) {
+        console.log(`  ${coin} buffer OK (${balance})`);
+      } else {
+        await ensureDustBuffer(driftClient, mapping.spotIndex);
+      }
+    } catch {
+      await ensureDustBuffer(driftClient, mapping.spotIndex);
+    }
+  }
+  console.log("  Dust buffers verified.\n");
 }
 
 // --- Core DN Operations ---
