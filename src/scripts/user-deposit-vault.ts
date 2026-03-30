@@ -12,7 +12,7 @@ import { USDC_MINT, SPL_TOKEN_PROGRAM_ID } from "../config/constants";
 import { vaultAddress } from "../config/vault";
 import { getConnection, loadKeypair, sendAndConfirmTx } from "../utils/helpers";
 
-const DEPOSIT_AMOUNT = new BN(375 * 1e6); // 375 USDC
+const DEPOSIT_AMOUNT = new BN(399 * 1e6); // 399 USDC
 
 async function main() {
   console.log("Depositing into Yogi Vault...\n");

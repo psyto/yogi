@@ -12,7 +12,7 @@
     "admin:add-adaptor": "node --loader ts-node/esm src/scripts/admin-add-adaptor.ts",
     "manager:init-strategy": "node --loader ts-node/esm src/scripts/manager-init-strategy.ts",
     "backtest": "npm run build && node dist/scripts/backtest.js",
-    "test": "npm run build && node dist/tests/cost-calculator.test.js && node dist/tests/leverage-controller.test.js && node dist/tests/funding-scanner.test.js && node dist/tests/imbalance-detector.test.js && node dist/tests/regime-engine.test.js && node dist/tests/drift-signal-detector.test.js"
+    "test": "npm run build && node dist/tests/cost-calculator.test.js && node dist/tests/leverage-controller.test.js && node dist/tests/funding-scanner.test.js && node dist/tests/imbalance-detector.test.js && node dist/tests/regime-engine.test.js && node dist/tests/drift-signal-detector.test.js && node dist/tests/emergency-decisions.test.js"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.30.1",

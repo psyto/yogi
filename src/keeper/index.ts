@@ -31,6 +31,7 @@ import {
   classifyVolRegime,
 } from "./leverage-controller";
 import { computeHealthState, computeDrawdown } from "./health-monitor";
+import { decideEmergencyAction } from "./emergency-decisions";
 import {
   fetchMarketImbalances,
   rankByImbalance,
@@ -225,16 +226,44 @@ async function runImbalanceScan(): Promise<void> {
 }
 
 async function runEmergencyChecks(driftClient: DriftClient): Promise<boolean> {
-  // Health ratio check
+  // Gather state for decision
   const health = computeHealthState(driftClient);
+  const equity =
+    driftClient.getUser().getTotalCollateral().toNumber() / 1e6;
+  if (equity > peakEquity) peakEquity = equity;
+  const drawdown = computeDrawdown(equity, peakEquity);
+
+  // Pure decision — no side effects
+  const action = decideEmergencyAction({
+    healthAction: health.action,
+    equity,
+    peakEquity,
+    drawdownAction: drawdown.action,
+    signalSeverity: currentSignals.severity,
+    hasActivePositions: activePositions.length > 0,
+  });
+
+  if (action.kind === "none") return false;
+
+  // Log context
   if (health.action !== "none") {
     console.log(
       `HEALTH ${health.status.toUpperCase()}: ratio=${health.healthRatio.toFixed(3)} collateral=$${health.totalCollateral.toFixed(2)} pnl=$${health.unrealizedPnl.toFixed(2)}`
     );
+  }
+  if (drawdown.action !== "none") {
+    console.log(
+      `DRAWDOWN ${drawdown.drawdownPct.toFixed(2)}%: equity=$${equity.toFixed(2)} peak=$${peakEquity.toFixed(2)}`
+    );
+  }
 
-    if (health.action === "close_all") {
-      console.log("EMERGENCY: Closing all positions — health critical");
-      // Close DN positions first
+  // Execute the decided action
+  switch (action.kind) {
+    case "close_all": {
+      const reason = equity < 0 ? "negative equity"
+        : health.action === "close_all" ? "health critical"
+        : "severe drawdown";
+      console.log(`EMERGENCY: Closing all positions — ${reason}`);
       for (const pos of [...dnPositions]) {
         await closeDeltaNeutral(driftClient, pos);
       }
@@ -243,10 +272,10 @@ async function runEmergencyChecks(driftClient: DriftClient): Promise<boolean> {
         await closeBasisPosition(driftClient, activePositions[i].marketIndex);
         activePositions.splice(i, 1);
       }
+      if (action.resetPeak) peakEquity = equity;
       return true;
     }
-
-    if (health.action === "reduce") {
+    case "reduce_health": {
       console.log("WARNING: Reducing positions — health declining");
       if (activePositions.length > 0) {
         const largest = activePositions.reduce((a, b) =>
@@ -256,64 +285,28 @@ async function runEmergencyChecks(driftClient: DriftClient): Promise<boolean> {
         const idx = activePositions.indexOf(largest);
         activePositions.splice(idx, 1);
       }
+      return false;
     }
-  }
-
-  // Drawdown check
-  const equity =
-    driftClient.getUser().getTotalCollateral().toNumber() / 1e6;
-  if (equity < 0) {
-    console.error(`CRITICAL: Negative equity detected ($${equity.toFixed(2)}) — closing all positions`);
-    for (const pos of [...dnPositions]) {
-      await closeDeltaNeutral(driftClient, pos);
-    }
-    dnPositions.length = 0;
-    for (let i = activePositions.length - 1; i >= 0; i--) {
-      await closeBasisPosition(driftClient, activePositions[i].marketIndex);
-      activePositions.splice(i, 1);
-    }
-    return true;
-  }
-  if (equity > peakEquity) peakEquity = equity;
-
-  const drawdown = computeDrawdown(equity, peakEquity);
-  if (drawdown.action !== "none") {
-    console.log(
-      `DRAWDOWN ${drawdown.drawdownPct.toFixed(2)}%: equity=$${equity.toFixed(2)} peak=$${peakEquity.toFixed(2)}`
-    );
-
-    if (drawdown.action === "close_all") {
-      console.log("EMERGENCY: Closing all positions — severe drawdown");
-      for (let i = activePositions.length - 1; i >= 0; i--) {
-        await closeBasisPosition(driftClient, activePositions[i].marketIndex);
-        activePositions.splice(i, 1);
-      }
-      return true;
-    }
-
-    if (drawdown.action === "reduce") {
+    case "reduce_drawdown": {
       console.log("WARNING: Reducing positions — drawdown limit");
       if (activePositions.length > 0) {
         const worst = activePositions[activePositions.length - 1];
         await closeBasisPosition(driftClient, worst.marketIndex);
         activePositions.splice(activePositions.length - 1, 1);
       }
+      return false;
+    }
+    case "reduce_signal": {
+      console.log("SIGNAL CRITICAL: Reducing positions — anomaly detected");
+      const largest = activePositions.reduce((a, b) =>
+        a.sizeUsd > b.sizeUsd ? a : b
+      );
+      await closeBasisPosition(driftClient, largest.marketIndex);
+      const idx = activePositions.indexOf(largest);
+      activePositions.splice(idx, 1);
+      return false;
     }
   }
-
-  // YOGI-SPECIFIC: Signal-driven emergency
-  // If signals are CRITICAL and we have positions, force reduce
-  if (currentSignals.severity >= 3 && activePositions.length > 0) {
-    console.log("SIGNAL CRITICAL: Reducing positions — anomaly detected");
-    const largest = activePositions.reduce((a, b) =>
-      a.sizeUsd > b.sizeUsd ? a : b
-    );
-    await closeBasisPosition(driftClient, largest.marketIndex);
-    const idx = activePositions.indexOf(largest);
-    activePositions.splice(idx, 1);
-  }
-
-  return false;
 }
 
 async function runFundingScan(driftClient: DriftClient): Promise<void> {
