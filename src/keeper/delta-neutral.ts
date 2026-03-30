@@ -44,10 +44,12 @@ export interface DeltaNeutralPosition {
 }
 
 // Spot/perp index mapping for DN-eligible markets on Drift
+// Spot indexes: 0=USDC, 1=SOL, 2=mSOL, 3=wBTC, 4=wETH, 5=USDT
+// Perp indexes: 0=SOL-PERP, 1=BTC-PERP, 2=ETH-PERP
 export const DN_MARKET_MAP: Record<string, { spotIndex: number; perpIndex: number }> = {
-  "SOL-PERP": { spotIndex: 1, perpIndex: 0 },
-  "BTC-PERP": { spotIndex: 2, perpIndex: 1 },
-  "ETH-PERP": { spotIndex: 3, perpIndex: 2 },
+  "SOL-PERP": { spotIndex: 1, perpIndex: 0 },   // SOL spot + SOL perp
+  "BTC-PERP": { spotIndex: 3, perpIndex: 1 },   // wBTC spot + BTC perp
+  "ETH-PERP": { spotIndex: 4, perpIndex: 2 },   // wETH spot + ETH perp
 };
 
 // Capital allocation for DN positions
@@ -59,9 +61,9 @@ const MARGIN_RATIO = 0.30;  // 30% for perp margin
 // requirements and block all future DN opens. A small permanent deposit
 // absorbs the dust. One-time cost ~$17 across all DN-eligible assets.
 const SPOT_DUST_BUFFERS: Record<number, number> = {
-  1: 100000000,    // SOL: 0.1 SOL (~$8) — min order size
-  2: 10000,        // BTC: 0.0001 BTC (~$7) — min order size
-  3: 100000,       // ETH: 0.001 ETH (~$2) — min order size
+  1: 100000000,    // SOL (index 1): 0.1 SOL (~$8) — min order size
+  3: 10000,        // wBTC (index 3): 0.0001 BTC (~$7) — min order size
+  4: 100000,       // wETH (index 4): 0.001 ETH (~$2) — min order size
 };
 
 // --- Helpers ---
