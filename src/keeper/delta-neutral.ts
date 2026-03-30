@@ -26,6 +26,7 @@ import {
 } from "../config/constants";
 import { STRATEGY_CONFIG } from "../config/vault";
 import { checkDnSlippage } from "./slippage-guard";
+import { shouldSkipOrphanedSpot } from "./emergency-decisions";
 
 // --- Types ---
 
@@ -552,15 +553,26 @@ export async function loadExistingDnPositions(
       try {
         const spotMarket = driftClient.getSpotMarketAccount(spotIndex);
         const spotPrecision = spotMarket ? Math.pow(10, spotMarket.decimals) : BASE_PRECISION;
-        const spotBaseAmount = new BN(Math.floor(spotSize * spotPrecision));
-        await driftClient.placeSpotOrder({
-          orderType: OrderType.MARKET,
-          marketType: MarketType.SPOT,
-          marketIndex: spotIndex,
-          direction: PositionDirection.SHORT,
-          baseAssetAmount: spotBaseAmount,
+        const minSize = spotMarket?.minOrderSize?.toNumber() ?? 0;
+        const decision = shouldSkipOrphanedSpot({
+          spotSizeCoins: spotSize,
+          spotPrecision,
+          minOrderSize: minSize,
         });
-        console.log(`  Sold orphaned spot: ${spotSize.toFixed(6)} ${coin}`);
+        if (decision.skip) {
+          console.log(
+            `  Orphaned spot ${coin} (${spotSize.toFixed(6)}) below min order size — treating as dust, skipping.`
+          );
+        } else {
+          await driftClient.placeSpotOrder({
+            orderType: OrderType.MARKET,
+            marketType: MarketType.SPOT,
+            marketIndex: spotIndex,
+            direction: PositionDirection.SHORT,
+            baseAssetAmount: new BN(decision.baseAmount),
+          });
+          console.log(`  Sold orphaned spot: ${spotSize.toFixed(6)} ${coin}`);
+        }
       } catch (err) {
         console.error(`  Failed to sell orphaned spot ${coin}:`, err);
       }
