@@ -76,8 +76,9 @@ function estimatePerpSlippage(
     }
 
     // AMM reserves (in base precision units)
-    const baseReserve = amm.baseAssetReserve.toNumber() / BASE_PRECISION;
-    const quoteReserve = amm.quoteAssetReserve.toNumber() / BASE_PRECISION;
+    // Use BigInt conversion to avoid 53-bit overflow on large reserves (e.g., POPCAT, DRIFT)
+    const baseReserve = Number(BigInt(amm.baseAssetReserve.toString()) / BigInt(BASE_PRECISION));
+    const quoteReserve = Number(BigInt(amm.quoteAssetReserve.toString()) / BigInt(BASE_PRECISION));
 
     if (baseReserve <= 0 || quoteReserve <= 0) {
       return {
@@ -88,7 +89,7 @@ function estimatePerpSlippage(
     }
 
     // Peg multiplier scales the AMM price to match the oracle
-    const pegMultiplier = amm.pegMultiplier.toNumber() / PRICE_PRECISION;
+    const pegMultiplier = Number(BigInt(amm.pegMultiplier.toString())) / PRICE_PRECISION;
 
     // Current AMM price = (quoteReserve / baseReserve) * pegMultiplier
     const ammPrice = (quoteReserve / baseReserve) * pegMultiplier;
@@ -167,7 +168,7 @@ function estimateSpotSlippage(
 
     // Use deposit balance as a proxy for available liquidity
     const precision = Math.pow(10, spotMarket.decimals);
-    const depositBalance = spotMarket.depositBalance.toNumber() / precision;
+    const depositBalance = Number(BigInt(spotMarket.depositBalance.toString()) / BigInt(precision));
 
     if (depositBalance <= 0) {
       return {

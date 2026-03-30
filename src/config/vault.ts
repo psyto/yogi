@@ -64,6 +64,7 @@ export const STRATEGY_CONFIG = {
   allowedMarkets: [
     "SOL-PERP", "BTC-PERP", "ETH-PERP",
     "DOGE-PERP", "SUI-PERP", "AVAX-PERP",
+    "POPCAT-PERP", "DRIFT-PERP",
   ] as string[],
   excludeMarkets: [
     "1MBONK-PERP", "1KPUMP-PERP", "1KMON-PERP", "MET-PERP",
@@ -165,9 +166,9 @@ export const STRATEGY_CONFIG = {
   deltaNeutralMode: true,          // Enable DN: spot buy + perp short (funding-only profit)
   dnTiltPct: 0.10,                 // Max tilt: 10% extra short bias in calm markets
   dnMinFundingApy: 5.0,            // Min annualized funding to open DN position
-  dnMaxSlippagePct: 0.5,           // Max acceptable slippage per leg
+  dnMaxSlippagePct: 1.5,           // Max acceptable slippage per leg (raised for small-cap DN markets)
   dnDeltaDriftThreshold: 5.0,      // % delta drift before rebalancing legs
-  dnEligibleMarkets: ["SOL-PERP", "BTC-PERP", "ETH-PERP"] as string[],
+  dnEligibleMarkets: ["SOL-PERP", "BTC-PERP", "ETH-PERP", "POPCAT-PERP", "DRIFT-PERP"] as string[],
 } as Record<string, any>;
 
 export let vaultAddress = process.env.VAULT_ADDRESS

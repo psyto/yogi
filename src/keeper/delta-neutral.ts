@@ -45,12 +45,14 @@ export interface DeltaNeutralPosition {
 }
 
 // Spot/perp index mapping for DN-eligible markets on Drift
-// Spot indexes: 0=USDC, 1=SOL, 2=mSOL, 3=wBTC, 4=wETH, 5=USDT
-// Perp indexes: 0=SOL-PERP, 1=BTC-PERP, 2=ETH-PERP
+// Spot indexes: 0=USDC, 1=SOL, 2=mSOL, 3=wBTC, 4=wETH, 5=USDT, 15=DRIFT, 20=POPCAT
+// Perp indexes: 0=SOL-PERP, 1=BTC-PERP, 2=ETH-PERP, 30=DRIFT-PERP, 34=POPCAT-PERP
 export const DN_MARKET_MAP: Record<string, { spotIndex: number; perpIndex: number }> = {
-  "SOL-PERP": { spotIndex: 1, perpIndex: 0 },   // SOL spot + SOL perp
-  "BTC-PERP": { spotIndex: 3, perpIndex: 1 },   // wBTC spot + BTC perp
-  "ETH-PERP": { spotIndex: 4, perpIndex: 2 },   // wETH spot + ETH perp
+  "SOL-PERP": { spotIndex: 1, perpIndex: 0 },       // SOL spot + SOL perp
+  "BTC-PERP": { spotIndex: 3, perpIndex: 1 },       // wBTC spot + BTC perp
+  "ETH-PERP": { spotIndex: 4, perpIndex: 2 },       // wETH spot + ETH perp
+  "POPCAT-PERP": { spotIndex: 20, perpIndex: 34 },  // POPCAT spot + POPCAT perp
+  "DRIFT-PERP": { spotIndex: 15, perpIndex: 30 },   // DRIFT spot + DRIFT perp
 };
 
 // Capital allocation for DN positions

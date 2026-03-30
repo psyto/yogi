@@ -114,8 +114,8 @@ async function initDriftClient(
     },
     skipLoadUsers: false,
     // Load all perp and spot markets so we can place orders on any market
-    perpMarketIndexes: [0, 1, 2, 3, 7, 9, 22], // SOL, BTC, ETH, APT, DOGE, SUI, AVAX
-    spotMarketIndexes: [0, 1, 3, 4, 5], // USDC, SOL, wBTC, wETH, USDT
+    perpMarketIndexes: [0, 1, 2, 3, 7, 9, 22, 30, 34], // SOL, BTC, ETH, APT, DOGE, SUI, AVAX, DRIFT, POPCAT
+    spotMarketIndexes: [0, 1, 3, 4, 5, 15, 20], // USDC, SOL, wBTC, wETH, USDT, DRIFT, POPCAT
   });
 
   console.log("Subscribing to Drift...");
@@ -494,6 +494,15 @@ async function runDnRebalance(driftClient: DriftClient): Promise<void> {
       pos.entryFundingRate = marketData.rate24h;
       dnPositions.push(pos);
     }
+  }
+
+  // Reset peak equity after opening new positions.
+  // Opening DN moves capital from USDC to spot tokens, which temporarily
+  // reduces getTotalCollateral() until Drift accounts settle. Without this
+  // reset, the emergency check sees a false drawdown and closes everything.
+  if (dnPositions.length > 0) {
+    const newEquity = driftClient.getUser().getTotalCollateral().toNumber() / 1e6;
+    peakEquity = newEquity;
   }
 }
 
