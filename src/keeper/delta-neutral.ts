@@ -281,9 +281,17 @@ export async function openDeltaNeutral(
     `Perp: ${perpSizeCoins.toFixed(6)} ${coin} ($${perpNotional.toFixed(2)}) @ $${price.toFixed(2)}`
   );
 
+  // CRITICAL: spot markets have different precision than perps.
+  // Perps use BASE_PRECISION (1e9). Spot uses market-specific decimals.
+  // wETH=1e8, wBTC=1e8, SOL=1e9. Using wrong precision = 10x position size.
+  const spotMarket = driftClient.getSpotMarketAccount(spotIndex);
+  const spotPrecision = spotMarket ? Math.pow(10, spotMarket.decimals) : BASE_PRECISION;
+
   // Step 1: Buy spot on Drift
   try {
-    const spotBaseAmount = new BN(Math.floor(roundedSpotSize * BASE_PRECISION));
+    const spotBaseAmount = new BN(Math.floor(roundedSpotSize * spotPrecision));
+
+    console.log(`  Spot precision: 1e${spotMarket?.decimals ?? 9} | baseAmount: ${spotBaseAmount.toString()}`);
 
     const spotTx = await driftClient.placeSpotOrder({
       orderType: OrderType.MARKET,
@@ -319,7 +327,7 @@ export async function openDeltaNeutral(
     // Try to unwind spot
     console.log("Unwinding spot position...");
     try {
-      const spotBaseAmount = new BN(Math.floor(roundedSpotSize * BASE_PRECISION));
+      const spotBaseAmount = new BN(Math.floor(roundedSpotSize * spotPrecision));
       await driftClient.placeSpotOrder({
         orderType: OrderType.MARKET,
         marketType: MarketType.SPOT,
@@ -393,11 +401,12 @@ export async function closeDeltaNeutral(
     success = false;
   }
 
-  // Step 2: Sell spot — always use recorded size (getSpotPosition scaledBalance
-  // uses different precision and is unreliable for detecting spot holdings)
+  // Step 2: Sell spot — use market-specific precision, not BASE_PRECISION
   try {
+    const spotMarket = driftClient.getSpotMarketAccount(spotMarketIndex);
+    const spotPrecision = spotMarket ? Math.pow(10, spotMarket.decimals) : BASE_PRECISION;
     const spotBaseAmount = new BN(
-      Math.floor(position.spotSizeCoins * BASE_PRECISION)
+      Math.floor(position.spotSizeCoins * spotPrecision)
     );
     console.log(`Selling spot: ${position.spotSizeCoins.toFixed(6)} ${coin} (market index ${spotMarketIndex})`);
     const spotTx = await driftClient.placeSpotOrder({
@@ -541,7 +550,9 @@ export async function loadExistingDnPositions(
         `  WARNING: Orphaned spot ${coin} = ${spotSize.toFixed(6)} coins (no matching perp). Will sell.`
       );
       try {
-        const spotBaseAmount = new BN(Math.floor(spotSize * BASE_PRECISION));
+        const spotMarket = driftClient.getSpotMarketAccount(spotIndex);
+        const spotPrecision = spotMarket ? Math.pow(10, spotMarket.decimals) : BASE_PRECISION;
+        const spotBaseAmount = new BN(Math.floor(spotSize * spotPrecision));
         await driftClient.placeSpotOrder({
           orderType: OrderType.MARKET,
           marketType: MarketType.SPOT,
