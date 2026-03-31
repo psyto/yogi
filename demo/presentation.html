@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=1920, height=1080">
-<title>Yogi Vault — Pitch</title>
+<title>Yogi Vault — Pitch (v2)</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { width: 1920px; height: 1080px; overflow: hidden; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; background: #0a0a0f; color: #e0e0e0; }
@@ -35,6 +35,9 @@
   .two-col > div { flex: 1; }
   .dn-flow { font-size: 20px; line-height: 2.2; }
   .dn-flow .step { color: #f0b040; }
+  .bug-list { text-align: left; font-size: 20px; line-height: 2.0; width: 1400px; }
+  .bug-list .bug-title { color: #e03131; font-weight: bold; }
+  .bug-list .bug-fix { color: #40c057; }
 </style>
 </head>
 <body>
@@ -43,32 +46,29 @@
 <div class="slide title-slide" id="slide-1">
   <h1>Yogi Vault</h1>
   <div class="subtitle">Dynamic Tilted Delta-Neutral on Drift</div>
-  <div class="tagline">"We built on Drift and Hyperliquid. This is what we learned."</div>
+  <div class="tagline">"We broke things. We fixed them. We taught others to avoid the same mistakes."</div>
   <p style="margin-top: 40px; color: #666;">Ranger Build-A-Bear Hackathon | Main Track + Drift Side Track</p>
 </div>
 
-<!-- Slide 2: The Misconception -->
+<!-- Slide 2: The Problem -->
 <div class="slide" id="slide-2">
-  <h2>The Misconception</h2>
+  <h2>The Problem</h2>
   <div class="signal-box fade-item">
     <div class="sig-card" style="border-color: #e03131;">
-      <div style="font-size: 48px; margin-bottom: 10px;">&ldquo;</div>
-      <div style="color: #e03131; font-size: 22px; font-weight: bold;">Common Narrative</div>
-      <div style="font-size: 18px; color: #ccc; margin-top: 10px;">"Drift is for HFT,<br>not yield farming"</div>
+      <div style="color: #e03131; font-size: 64px; font-weight: bold;">-7.4%</div>
+      <div style="font-size: 18px; color: #ccc; margin-top: 10px;">BTC in one week<br>(Mar 20&ndash;23, 2026)</div>
     </div>
     <div class="sig-card" style="border-color: #e03131;">
-      <div style="font-size: 48px; margin-bottom: 10px;">&ldquo;</div>
-      <div style="color: #e03131; font-size: 22px; font-weight: bold;">Surface Take</div>
-      <div style="font-size: 18px; color: #ccc; margin-top: 10px;">"Hyperliquid is where<br>the yield vaults are"</div>
+      <div style="color: #e03131; font-size: 28px; font-weight: bold; margin-top: 15px;">Directional Vaults</div>
+      <div style="font-size: 18px; color: #ccc; margin-top: 10px;">Fully deployed at max leverage.<br>Ate the drawdown.<br>Called it "temporary."</div>
     </div>
-    <div class="sig-card" style="border-color: #e03131;">
-      <div style="font-size: 48px; margin-bottom: 10px;">?</div>
-      <div style="color: #e03131; font-size: 22px; font-weight: bold;">Institutions Ask</div>
-      <div style="font-size: 18px; color: #ccc; margin-top: 10px;">"Where do we park capital<br>for yield with zero price risk?"</div>
+    <div class="sig-card" style="border-color: #40c057;">
+      <div style="color: #40c057; font-size: 28px; font-weight: bold; margin-top: 15px;">Delta-Neutral</div>
+      <div style="font-size: 18px; color: #ccc; margin-top: 10px;">Spot buy + perp short.<br>Price cancels out.<br>Pure funding yield.</div>
     </div>
   </div>
   <p style="margin-top: 30px; color: #888;">
-    We didn't accept the narrative. <span class="accent">We built the same DN strategy on Drift and Hyperliquid to find out.</span>
+    Institutions want yield with <span class="accent">zero price risk</span>. Delta-neutral on Drift is the answer.
   </p>
 </div>
 
@@ -78,19 +78,19 @@
   <p style="margin-bottom: 20px; color: #ccc;">Same strategy brain. Same signal detection. Same dynamic tilt. Two venues.</p>
   <table class="fade-item">
     <tr><th></th><th>Yogi (Drift)</th><th>Kodiak (Hyperliquid)</th></tr>
-    <tr><td class="dim">DN Markets</td><td class="green">SOL, BTC, ETH</td><td>HYPE only</td></tr>
+    <tr><td class="dim">DN Markets</td><td class="green">SOL, BTC, ETH, POPCAT, DRIFT</td><td>HYPE only</td></tr>
+    <tr><td class="dim">DN on Protocol Token</td><td class="green">DRIFT token DN</td><td class="red">N/A</td></tr>
+    <tr><td class="dim">Spot+Perp Pairs</td><td class="green">20+ (Solana long tail)</td><td>1 (HYPE only)</td></tr>
     <tr><td class="dim">Lending</td><td class="green">Native (Drift Earn)</td><td>Bridge to HyperEVM</td></tr>
-    <tr><td class="dim">Funding</td><td class="green">Continuous</td><td>Hourly settlement</td></tr>
     <tr><td class="dim">Maker Fees</td><td class="green">-0.2 bps (rebate)</td><td>1.5 bps (pay)</td></tr>
     <tr><td class="dim">Cross-Margin</td><td class="green">Spot + perp unified</td><td>Separate accounts</td></tr>
-    <tr><td class="dim">Concentration</td><td class="green">3 uncorrelated assets</td><td class="red">1 asset (HYPE)</td></tr>
   </table>
   <p style="margin-top: 20px; color: #888;">
-    <span class="accent">Drift's composability makes multi-asset delta-neutral easy.</span><br>No Jupiter. No bridges. Just placeSpotOrder + placePerpOrder.
+    <span class="accent">Drift's composability makes multi-asset DN easy.</span> 20+ spot-perp pairs &mdash; a long tail no other venue offers.
   </p>
 </div>
 
-<!-- Slide 4: Delta-Neutral Explained -->
+<!-- Slide 4: Delta-Neutral + Dynamic Tilt -->
 <div class="slide" id="slide-4">
   <h2>Delta-Neutral: Zero Price Risk</h2>
   <div class="two-col fade-item">
@@ -98,8 +98,8 @@
       <div class="sig-card" style="border-color: #40c057; text-align: left;">
         <div style="color: #40c057; font-size: 18px; font-weight: bold; margin-bottom: 15px;">HOW IT WORKS</div>
         <div class="dn-flow">
-          <span class="step">1.</span> Buy spot BTC on Drift ($256)<br>
-          <span class="step">2.</span> Short perp BTC on Drift ($263)<br>
+          <span class="step">1.</span> Buy spot on Drift (e.g., 2418 DRIFT)<br>
+          <span class="step">2.</span> Short perp on Drift (2538 DRIFT)<br>
           <span class="step">3.</span> Price up: spot +$X, perp -$X = <span class="green">$0</span><br>
           <span class="step">4.</span> Price down: spot -$X, perp +$X = <span class="green">$0</span><br>
           <span class="step">5.</span> Funding accrues: short collects = <span class="accent">pure yield</span>
@@ -173,80 +173,96 @@
   </p>
 </div>
 
-<!-- Slide 7: Live Performance -->
+<!-- Slide 7: What Went Wrong -->
 <div class="slide" id="slide-7">
+  <h2 style="color: #e03131;">What Went Wrong</h2>
+  <p style="margin-bottom: 15px; color: #ccc;">Four production bugs found live. Each one taught us something.</p>
+  <div class="two-col fade-item">
+    <div>
+      <div class="sig-card" style="border-color: #e03131; text-align: left; padding: 20px;">
+        <div style="color: #e03131; font-size: 18px; font-weight: bold;">Emergency Close Loop</div>
+        <div style="font-size: 16px; color: #ccc; margin-top: 8px; line-height: 1.6;">
+          Drawdown close_all only closed directional positions.<br>
+          DN positions ignored &rarr; infinite loop every 30s.<br>
+          <span class="green">Fix: extracted pure decision function + regression test</span>
+        </div>
+      </div>
+      <div class="sig-card" style="border-color: #e03131; text-align: left; padding: 20px; margin-top: 15px;">
+        <div style="color: #e03131; font-size: 18px; font-weight: bold;">Min Order Size</div>
+        <div style="font-size: 16px; color: #ccc; margin-top: 8px; line-height: 1.6;">
+          0.0999 SOL orphan &lt; Drift's 0.1 minimum.<br>
+          Every restart failed on the same transaction.<br>
+          <span class="green">Fix: check minOrderSize, skip dust</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="sig-card" style="border-color: #e03131; text-align: left; padding: 20px;">
+        <div style="color: #e03131; font-size: 18px; font-weight: bold;">False Drawdown Trigger</div>
+        <div style="font-size: 16px; color: #ccc; margin-top: 8px; line-height: 1.6;">
+          Opening DN drops equity temporarily (spot settlement lag).<br>
+          Emergency check saw 12% "drawdown" &rarr; closed everything.<br>
+          <span class="green">Fix: reset peak equity after opening positions</span>
+        </div>
+      </div>
+      <div class="sig-card" style="border-color: #e03131; text-align: left; padding: 20px; margin-top: 15px;">
+        <div style="color: #e03131; font-size: 18px; font-weight: bold;">Funding Churn</div>
+        <div style="font-size: 16px; color: #ccc; margin-top: 8px; line-height: 1.6;">
+          POPCAT 84% APY &rarr; flipped negative in hours.<br>
+          Open/close churn cost ~$70 in trading fees.<br>
+          <span class="green">Fix: 24h minimum hold period</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 8: What We Learned -->
+<div class="slide" id="slide-8">
+  <h2 style="color: #40c057;">What We Learned</h2>
+  <div class="two-col fade-item">
+    <div>
+      <div class="sig-card" style="border-color: #40c057; text-align: left;">
+        <div style="color: #40c057; font-size: 20px; font-weight: bold; margin-bottom: 12px;">62 Unit Tests &mdash; 7 Suites</div>
+        <div style="font-size: 17px; line-height: 1.8; color: #ccc;">
+          Emergency decisions: pure functions, no DriftClient<br>
+          Regression test for every production bug<br>
+          Cost calculator, regime engine, signals, leverage<br>
+          <span class="accent">Bug A:</span> drawdown close_all with DN-only positions<br>
+          <span class="accent">Bug B:</span> orphaned spot below min order size
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="sig-card" style="border-color: #f0b040; text-align: left;">
+        <div style="color: #f0b040; font-size: 20px; font-weight: bold; margin-bottom: 12px;">PerpU: Builder Mistakes Track</div>
+        <div style="font-size: 17px; line-height: 1.8; color: #ccc;">
+          8 lessons from 8 production failures:<br>
+          &bull; Spot and Perp Are Different Universes<br>
+          &bull; The Restart Path Is Where Bugs Hide<br>
+          &bull; Spot Precision Is Not Perp Precision<br>
+          &bull; Dust Borrows: The Invisible Strategy Killer<br>
+          <span class="accent">If you build on Drift after us,<br>you won't make the same errors.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 9: Live Proof -->
+<div class="slide" id="slide-9">
   <h2>Live on Solana Mainnet</h2>
-  <h3>Deployed March 20, 2026 &mdash; running continuously</h3>
+  <h3>Deployed March 20, 2026 &mdash; running 24/7</h3>
   <div class="stats-grid fade-item" style="margin-top: 20px;">
-    <div class="stat-card"><div class="stat-label">BEAR MARKET P&L</div><div class="stat-value" style="color: #40c057;">+$8.08</div><div class="stat-label">+1.61% during -7.4% BTC week</div></div>
-    <div class="stat-card"><div class="stat-label">MAX DRAWDOWN</div><div class="stat-value" style="color: #40c057;">$0.00</div><div class="stat-label">Zero drawdown, entire period</div></div>
-    <div class="stat-card"><div class="stat-label">CURRENT MODE</div><div class="stat-value">DN</div><div class="stat-label">Dynamic tilted delta-neutral</div></div>
-    <div class="stat-card"><div class="stat-label">DN MARKETS</div><div class="stat-value">3</div><div class="stat-label">SOL, BTC, ETH on Drift spot</div></div>
-    <div class="stat-card"><div class="stat-label">TARGET APY</div><div class="stat-value">10-20%</div><div class="stat-label">DN funding + tilt + auto-lending</div></div>
-    <div class="stat-card"><div class="stat-label">UNIT TESTS</div><div class="stat-value">38</div><div class="stat-label">6 test suites, all passing</div></div>
+    <div class="stat-card"><div class="stat-label">DN MARKETS</div><div class="stat-value">5</div><div class="stat-label">SOL, BTC, ETH, POPCAT, DRIFT</div></div>
+    <div class="stat-card"><div class="stat-label">CURRENT POSITIONS</div><div class="stat-value">DRIFT + ETH</div><div class="stat-label">Dynamic rotation to best funding</div></div>
+    <div class="stat-card"><div class="stat-label">UNIQUE</div><div class="stat-value">DRIFT DN</div><div class="stat-label">DN on Drift's own token</div></div>
+    <div class="stat-card"><div class="stat-label">SIGNAL DIMENSIONS</div><div class="stat-value">5</div><div class="stat-label">Including cross-venue (Binance/Bybit)</div></div>
+    <div class="stat-card"><div class="stat-label">UNIT TESTS</div><div class="stat-value">62</div><div class="stat-label">7 suites with regression coverage</div></div>
+    <div class="stat-card"><div class="stat-label">PERPU LESSONS</div><div class="stat-value">8</div><div class="stat-label">Builder Mistakes track</div></div>
   </div>
   <p style="margin-top: 20px; color: #888;">
     On-chain verifiable: vault <span class="accent">BFDTTG8n...</span> | Drift user <span class="accent">HURzSV...</span>
-  </p>
-</div>
-
-<!-- Slide 8: Complementary Portfolio -->
-<div class="slide" id="slide-8">
-  <h2>Complementary Portfolio: Yogi + Kodiak</h2>
-  <p style="margin-bottom: 20px; color: #ccc;">Two vaults, uncorrelated funding sources, zero asset overlap.</p>
-  <div class="two-col fade-item">
-    <div>
-      <div class="sig-card" style="border-color: #f0b040; text-align: left;">
-        <div style="color: #f0b040; font-size: 20px; font-weight: bold; margin-bottom: 10px;">YOGI (Drift) &mdash; 60%</div>
-        <div style="font-size: 18px; line-height: 2; color: #ccc;">
-          DN on SOL, BTC, ETH<br>
-          Funding: broad crypto sentiment<br>
-          Profile: volatile, high peaks<br>
-          Strength: multi-asset diversification
-        </div>
-      </div>
-    </div>
-    <div>
-      <div class="sig-card" style="border-color: #5fb3d4; text-align: left;">
-        <div style="color: #5fb3d4; font-size: 20px; font-weight: bold; margin-bottom: 10px;">KODIAK (Hyperliquid) &mdash; 40%</div>
-        <div style="font-size: 18px; line-height: 2; color: #ccc;">
-          DN on HYPE only<br>
-          Funding: ecosystem conviction<br>
-          Profile: stable, moderate<br>
-          Strength: persistent positive funding
-        </div>
-      </div>
-    </div>
-  </div>
-  <table class="fade-item" style="margin-top: 25px; width: 1000px;">
-    <tr><th>Condition</th><th>Yogi</th><th>Kodiak</th><th class="accent">Blended</th></tr>
-    <tr><td>Bull</td><td>~20%</td><td>~8%</td><td class="accent">~15%</td></tr>
-    <tr><td>Neutral</td><td>~12%</td><td>~6%</td><td class="accent">~10%</td></tr>
-    <tr><td>Bear stress</td><td>~5%</td><td>~5%</td><td class="accent">~5%</td></tr>
-  </table>
-</div>
-
-<!-- Slide 9: PerpU — Education -->
-<div class="slide" id="slide-9">
-  <h2>PerpU: Learn Perp DEX</h2>
-  <p style="margin-bottom: 30px; color: #ccc;">If we want institutions on Drift, we need education &mdash; not just vaults.</p>
-  <div class="signal-box fade-item">
-    <div class="sig-card" style="border-color: #f0b040;">
-      <div style="color: #f0b040; font-size: 20px; font-weight: bold;">For Institutions</div>
-      <div style="font-size: 16px; color: #ccc; margin-top: 10px;">Why Drift for yield?<br>DN mechanics explained<br>Risk framework</div>
-    </div>
-    <div class="sig-card" style="border-color: #5fb3d4;">
-      <div style="color: #5fb3d4; font-size: 20px; font-weight: bold;">For Developers</div>
-      <div style="font-size: 16px; color: #ccc; margin-top: 10px;">Drift SDK tutorials<br>Vault development<br>Keeper architecture</div>
-    </div>
-    <div class="sig-card" style="border-color: #40c057;">
-      <div style="color: #40c057; font-size: 20px; font-weight: bold;">Cross-Venue Insight</div>
-      <div style="font-size: 16px; color: #ccc; margin-top: 10px;">Drift vs Hyperliquid<br>Honest comparison<br>Built from real experience</div>
-    </div>
-  </div>
-  <p style="margin-top: 25px; color: #888;">
-    <span class="accent">"To understand something properly, you need to see outside of it."</span><br>
-    We built on both venues. PerpU shares what we learned.
   </p>
 </div>
 
@@ -256,14 +272,15 @@
   <div style="margin-top: 30px;">
     <table style="width: 1100px; margin: 0 auto;">
       <tr><td class="dim">Strategy</td><td class="accent">Dynamic tilted delta-neutral on Drift</td></tr>
-      <tr><td class="dim">Edge</td><td>Multi-asset DN (SOL/BTC/ETH) + 5D signal detection + dynamic tilt</td></tr>
-      <tr><td class="dim">Target APY</td><td class="accent">10-20% with near-zero price risk</td></tr>
-      <tr><td class="dim">Live proof</td><td>Zero drawdown through -7.4% BTC week</td></tr>
-      <tr><td class="dim">Ecosystem</td><td>Complementary portfolio (Yogi + Kodiak) + PerpU education</td></tr>
+      <tr><td class="dim">Edge</td><td>5 DN markets (incl. DRIFT token) + 5D signals + dynamic tilt</td></tr>
+      <tr><td class="dim">Production</td><td>4 bugs found, fixed, tested, and taught via PerpU</td></tr>
+      <tr><td class="dim">Tests</td><td>62 assertions, 7 suites, regression coverage for every live bug</td></tr>
+      <tr><td class="dim">Ecosystem</td><td>PerpU Builder Mistakes: 8 lessons so others don't repeat our errors</td></tr>
       <tr><td class="dim">Thesis</td><td>Drift is institutional yield infrastructure, not just HFT</td></tr>
     </table>
   </div>
-  <p style="margin-top: 40px;"><span class="accent">github.com/psyto/yogi</span></p>
+  <p style="margin-top: 40px; font-size: 36px;"><span class="accent">Every other vault shows a backtest. Yogi shows scars.</span></p>
+  <p style="margin-top: 20px;"><span class="accent">github.com/psyto/yogi</span></p>
   <p style="margin-top: 10px; color: #666;">Main Track + Drift Side Track</p>
 </div>
 
