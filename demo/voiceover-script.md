@@ -85,9 +85,9 @@
 > Emergency decisions extracted into pure functions — testable without a Drift client.
 > Twenty-four-hour minimum hold prevents churn from temporary funding dips.
 > Peak equity reset after opening positions prevents false drawdown triggers.
-> Orphaned spot check against Drift's minimum order size.
 > We documented every mistake in PerpU — eight lessons in the Builder Mistakes track.
 > Spot precision. Restart bugs. Dust borrows. Transaction limits.
+> All at perpu dot fabrknt dot com.
 > If you build on Drift after us, you won't make the same errors.
 
 ---
@@ -96,7 +96,7 @@
 
 > Live on Solana mainnet since March twentieth. Running twenty-four-seven on EC2.
 > Five DN-eligible markets. Currently running DRIFT and ETH delta-neutral.
-> Dynamic tilt at five percent. Cross-venue intelligence active.
+> Target APY: ten to fifty percent from DN funding plus tilt plus auto-lending.
 > Vault address and Drift user account — all on-chain, all verifiable.
 > On-chain since day one. Not a backtest.
 
