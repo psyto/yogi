@@ -395,11 +395,20 @@ async function runDnRebalance(driftClient: DriftClient): Promise<void> {
   const rateMap = new Map(rates.map((r) => [r.market, r]));
   const dnMinApy = STRATEGY_CONFIG.dnMinFundingApy ?? 5.0;
 
+  const minHoldMs = (STRATEGY_CONFIG.dnMinHoldHours ?? 24) * 60 * 60 * 1000;
   for (let i = dnPositions.length - 1; i >= 0; i--) {
     const pos = dnPositions[i];
     const marketName = `${pos.coin}-PERP`;
     const rate = rateMap.get(marketName);
+    const heldMs = Date.now() - pos.entryTimestamp;
     if (rate && rate.annualizedPct < dnMinApy) {
+      if (heldMs < minHoldMs) {
+        const hoursLeft = ((minHoldMs - heldMs) / (60 * 60 * 1000)).toFixed(1);
+        console.log(
+          `Holding DN ${pos.coin}: funding ${rate.annualizedPct.toFixed(1)}% below threshold, but min hold has ${hoursLeft}h remaining`
+        );
+        continue;
+      }
       console.log(
         `Closing DN ${pos.coin}: funding ${rate.annualizedPct.toFixed(1)}% below ${dnMinApy}% threshold`
       );

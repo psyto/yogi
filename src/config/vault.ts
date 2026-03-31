@@ -166,6 +166,7 @@ export const STRATEGY_CONFIG = {
   deltaNeutralMode: true,          // Enable DN: spot buy + perp short (funding-only profit)
   dnTiltPct: 0.10,                 // Max tilt: 10% extra short bias in calm markets
   dnMinFundingApy: 5.0,            // Min annualized funding to open DN position
+  dnMinHoldHours: 24,              // Min hours to hold DN before funding-based exit (avoid churn)
   dnMaxSlippagePct: 1.5,           // Max acceptable slippage per leg (raised for small-cap DN markets)
   dnDeltaDriftThreshold: 5.0,      // % delta drift before rebalancing legs
   dnEligibleMarkets: ["SOL-PERP", "BTC-PERP", "ETH-PERP", "POPCAT-PERP", "DRIFT-PERP"] as string[],
