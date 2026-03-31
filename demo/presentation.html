@@ -85,9 +85,14 @@
     <tr><td class="dim">Maker Fees</td><td class="green">-0.2 bps (rebate)</td><td>1.5 bps (pay)</td></tr>
     <tr><td class="dim">Cross-Margin</td><td class="green">Spot + perp unified</td><td>Separate accounts</td></tr>
   </table>
-  <p style="margin-top: 20px; color: #888;">
-    <span class="accent">Drift's composability makes multi-asset DN easy.</span> 20+ spot-perp pairs &mdash; a long tail no other venue offers.
-  </p>
+  <div class="terminal fade-item" style="margin-top: 20px; font-size: 18px; width: 1400px;">
+    <span class="dim">--- Funding Rate Scan ---</span><br>
+    <span class="dim">Markets: 74 total -> 5 positive funding -> 5 cost-viable</span><br>
+    &nbsp;&nbsp;1. <span class="accent">POPCAT-PERP: 84.16% APY</span> (net: 152.4 bps/day, break-even: 9h)<br>
+    &nbsp;&nbsp;2. <span class="accent">DRIFT-PERP: 105.45% APY</span> (net: 193.2 bps/day, break-even: 7h)<br>
+    &nbsp;&nbsp;3. SUI-PERP: 59.48% APY (net: 105.1 bps/day, break-even: 13h)<br>
+    &nbsp;&nbsp;4. AVAX-PERP: 13.42% APY | 5. DOGE-PERP: 15.12% APY
+  </div>
 </div>
 
 <!-- Slide 4: Delta-Neutral + Dynamic Tilt -->
@@ -119,9 +124,12 @@
       </div>
     </div>
   </div>
-  <p style="margin-top: 20px; color: #888;">
-    <span class="accent">No other Drift vault adjusts its hedge ratio in real time based on signals.</span>
-  </p>
+  <div class="terminal fade-item" style="margin-top: 15px; font-size: 17px; width: 1400px;">
+    <span class="dim">--- Opening Delta-Neutral: DRIFT | tilt=5% short bias ---</span><br>
+    Spot BUY: <span class="green">2418.000000 DRIFT</span> (market) | tx: 67hWKu...1At3<br>
+    Perp SHORT: <span class="red">2538.000000 DRIFT</span> (market) | tx: 5VWdtH...DE5U<br>
+    DN opened: DRIFT | <span class="accent">delta=-120.000000 (-5.0%)</span> | notional=$160.59 | tilt=5%
+  </div>
 </div>
 
 <!-- Slide 5: 5D Intelligence Layer -->
@@ -150,10 +158,12 @@
       <div style="font-size: 14px; color: #ccc; margin-top: 10px;">Drift vs Binance<br>vs Bybit funding</div>
     </div>
   </div>
-  <p style="margin-top: 25px; color: #888;">
-    Severity: CLEAR / LOW / HIGH / CRITICAL<br>
-    <span class="accent">Signals reduce tilt and deployment. CRITICAL = pure DN + minimal exposure.</span>
-  </p>
+  <div class="terminal fade-item" style="margin-top: 15px; font-size: 16px; width: 1400px;">
+    <span class="dim">Cross-venue funding comparison:</span><br>
+    &nbsp;&nbsp;SOL-PERP: Drift=<span class="red">-35.3%</span> | Bin=<span class="green">+6.3%</span> | Byb=<span class="green">+11.0%</span> | spread=-42.4% &rarr; <span class="red">drift_low (100%)</span> | OI: $1,450M<br>
+    &nbsp;&nbsp;ETH-PERP: Drift=<span class="green">+14.5%</span> | Bin=-4.7% | Byb=+0.4% | spread=+16.7% &rarr; <span class="green">drift_high (100%)</span> | OI: $6,189M<br>
+    &nbsp;&nbsp;SUI-PERP: Drift=<span class="green">+57.0%</span> | Bin=+1.5% | Byb=+8.6% | spread=+52.0% &rarr; <span class="green">drift_high (100%)</span> | OI: $133M
+  </div>
 </div>
 
 <!-- Slide 6: Regime Engine -->
@@ -167,10 +177,11 @@
     <tr><td class="red">High Vol</td><td>75% @ 0.8x</td><td>55% @ 0.5x</td><td>30% @ 0.3x</td><td class="red">15% @ 0.0x</td><td>5%</td></tr>
     <tr><td class="red">Extreme</td><td colspan="4" style="text-align: center; color: #e03131;">0% @ 0.0x &mdash; Drift auto-lending only</td><td class="red">0%</td></tr>
   </table>
-  <p style="margin-top: 20px; color: #888;">
-    DN is safer than directional &rarr; higher deployment at same risk.<br>
-    <span class="accent">Tilt goes to 0% at HIGH/CRITICAL = pure delta-neutral, zero price exposure.</span>
-  </p>
+  <div class="terminal fade-item" style="margin-top: 15px; font-size: 18px; width: 1400px;">
+    <span class="dim">Vol: 55.8% (high regime)</span><br>
+    Regime: <span class="accent">[->] high vol, no anomalies -> 75% deployed @ 0.8x</span><br>
+    Equity: $900.88 | Deployable: $675.66 (75%) | Leverage: 0.8x | Mode: normal
+  </div>
 </div>
 
 <!-- Slide 7: What Went Wrong -->
@@ -181,17 +192,18 @@
     <div>
       <div class="sig-card" style="border-color: #e03131; text-align: left; padding: 20px;">
         <div style="color: #e03131; font-size: 18px; font-weight: bold;">Emergency Close Loop</div>
-        <div style="font-size: 16px; color: #ccc; margin-top: 8px; line-height: 1.6;">
-          Drawdown close_all only closed directional positions.<br>
-          DN positions ignored &rarr; infinite loop every 30s.<br>
-          <span class="green">Fix: extracted pure decision function + regression test</span>
+        <div style="font-size: 15px; color: #ccc; margin-top: 8px; line-height: 1.5;">
+          <code style="color: #e03131; font-size: 13px;">DRAWDOWN 7.36%: equity=$834.32 peak=$900.57</code><br>
+          <code style="color: #e03131; font-size: 13px;">EMERGENCY: Closing all positions</code><br>
+          DN positions ignored &rarr; loop every 30s for hours<br>
+          <span class="green">Fix: pure decision function + regression test</span>
         </div>
       </div>
       <div class="sig-card" style="border-color: #e03131; text-align: left; padding: 20px; margin-top: 15px;">
         <div style="color: #e03131; font-size: 18px; font-weight: bold;">Min Order Size</div>
-        <div style="font-size: 16px; color: #ccc; margin-top: 8px; line-height: 1.6;">
-          0.0999 SOL orphan &lt; Drift's 0.1 minimum.<br>
-          Every restart failed on the same transaction.<br>
+        <div style="font-size: 15px; color: #ccc; margin-top: 8px; line-height: 1.5;">
+          <code style="color: #e03131; font-size: 13px;">base_asset_amount (99900000) &lt; min_order_size (100000000)</code><br>
+          0.0999 SOL &lt; 0.1 minimum. Failed every restart.<br>
           <span class="green">Fix: check minOrderSize, skip dust</span>
         </div>
       </div>
@@ -199,17 +211,17 @@
     <div>
       <div class="sig-card" style="border-color: #e03131; text-align: left; padding: 20px;">
         <div style="color: #e03131; font-size: 18px; font-weight: bold;">False Drawdown Trigger</div>
-        <div style="font-size: 16px; color: #ccc; margin-top: 8px; line-height: 1.6;">
-          Opening DN drops equity temporarily (spot settlement lag).<br>
-          Emergency check saw 12% "drawdown" &rarr; closed everything.<br>
+        <div style="font-size: 15px; color: #ccc; margin-top: 8px; line-height: 1.5;">
+          <code style="color: #e03131; font-size: 13px;">DRAWDOWN 12.20%: equity=$791.01 peak=$900.87</code><br>
+          Spot settlement lag &rarr; false 12% drop &rarr; closed everything<br>
           <span class="green">Fix: reset peak equity after opening positions</span>
         </div>
       </div>
       <div class="sig-card" style="border-color: #e03131; text-align: left; padding: 20px; margin-top: 15px;">
         <div style="color: #e03131; font-size: 18px; font-weight: bold;">Funding Churn</div>
-        <div style="font-size: 16px; color: #ccc; margin-top: 8px; line-height: 1.6;">
-          POPCAT 84% APY &rarr; flipped negative in hours.<br>
-          Open/close churn cost ~$70 in trading fees.<br>
+        <div style="font-size: 15px; color: #ccc; margin-top: 8px; line-height: 1.5;">
+          <code style="color: #e03131; font-size: 13px;">Closing DN POPCAT: funding -16.3% below 5% threshold</code><br>
+          Opened at 84% APY, flipped in 12h. ~$70 churn cost.<br>
           <span class="green">Fix: 24h minimum hold period</span>
         </div>
       </div>
@@ -261,8 +273,14 @@
     <div class="stat-card"><div class="stat-label">UNIT TESTS</div><div class="stat-value">62</div><div class="stat-label">7 suites with regression coverage</div></div>
     <div class="stat-card"><div class="stat-label">PERPU LESSONS</div><div class="stat-value">8</div><div class="stat-label">Builder Mistakes track</div></div>
   </div>
-  <p style="margin-top: 20px; color: #888;">
-    On-chain verifiable: vault <span class="accent">BFDTTG8n...</span> | Drift user <span class="accent">HURzSV...</span>
+  <div class="terminal fade-item" style="margin-top: 15px; font-size: 18px; width: 1400px;">
+    <span class="dim">[2026-03-31T11:22:49Z]</span> <span class="accent">[DN:2 DIR:0 T:5%]</span> Positions: 2 | Equity: $689.87 | Regime: normal (75% @ 0.8x) | Signal: CLEAR<br>
+    <span class="dim">Holding:</span> DRIFT DN: spot=2418 perp=2538 <span class="accent">delta=-5.0%</span> tilt=5% | notional=$160.59 netPnL=$0.30<br>
+    <span class="dim">Holding:</span> ETH DN: spot=0.075 perp=0.078 <span class="accent">delta=-5.0%</span> tilt=5% | notional=$154.76
+  </div>
+  <p style="margin-top: 15px; color: #888;">
+    Vault: <span class="accent">BFDTTG8nJF7uLf3wsqFJpYCvC6wA6BahBRKjTgtKPy4n</span><br>
+    Drift user: <span class="accent">HURzSVDvBBA9VEZ1j1SQhn4iHUhxua3ZNhFejGgfpuq8</span>
   </p>
 </div>
 
