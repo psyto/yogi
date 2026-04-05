@@ -417,6 +417,43 @@ pm2 save && pm2 startup
 - **Data feed**: [Drift Data API](https://data.api.drift.trade) — funding rates, market stats, OHLC candles
 - **RPC**: Helius (websocket subscription mode)
 
+## Signal API
+
+Yogi's intelligence layer is available as a paid API. Traders and vault builders can consume regime decisions without running the full keeper.
+
+```bash
+curl -H "Authorization: Bearer fbrk_your_key" https://yogi-api.fabrknt.com/v1/regime
+```
+
+Returns: `{ deployment_pct, max_leverage, rebalance_mode, signal_severity, vol_regime }`
+
+| Endpoint | What |
+|----------|------|
+| `/v1/regime` | Deployment %, leverage, mode — the main decision |
+| `/v1/signals` | 5D anomaly detection state |
+| `/v1/funding` | Market rankings by funding rate |
+| `/v1/cross-venue` | Drift vs Binance/Bybit comparison |
+| `/v1/imbalances` | Market imbalance scores |
+| `/v1/health` | Health check (no auth) |
+
+An [open-source keeper template](https://github.com/fabrknt/keeper-drift-template) consumes this API — users run it with their own wallets. Intelligence from Fabrknt, execution under your control.
+
+Get an API key at [flow.fabrknt.com/dashboard](https://flow.fabrknt.com/dashboard) ($99/mo Pro tier).
+
+## Part of Fabrknt
+
+Yogi is one piece of a larger build toward [Syntx](https://github.com/psyto/syntx) — a composable perp DEX on Solana. What Yogi proves (regime engine, anomaly detection, multi-asset DN) becomes Syntx's built-in vault intelligence.
+
+| Product | Role | Status |
+|---------|------|--------|
+| **Yogi** | Proves DN + regime engine on Drift | Mainnet, keeper live |
+| [Kodiak](https://github.com/psyto/kodiak) | Proves 5-layer yield on Hyperliquid | Mainnet, keeper live |
+| [Flow](https://github.com/fabrknt/flow) | Capital flow intelligence | Live at flow.fabrknt.com |
+| [PerpU](https://github.com/fabrknt/perpu) | Cross-protocol education | Live, 182+ lessons |
+| [Syntx](https://github.com/psyto/syntx) | Composable perp DEX (endgame) | Development |
+
+29 @fabrknt/* infrastructure packages (margin, fees, privacy, security, state) + 5 Percolator matchers form Syntx's technology stack. The vaults prove the intelligence works before it ships as a platform.
+
 ## Complementary Portfolio — Yogi + Kodiak
 
 Yogi pairs with [Kodiak](https://github.com/psyto/kodiak) (Hyperliquid) to form a diversified DN funding portfolio. They harvest funding from uncorrelated sources:
