@@ -71,6 +71,7 @@ import {
   getDeltaPct,
   getNotionalUsd,
 } from "./delta-neutral";
+import { updateState } from "../api/state";
 
 // --- Global State ---
 const activePositions: BasisPosition[] = [];
@@ -150,6 +151,13 @@ async function updateLeverage(): Promise<void> {
     console.log(
       `Vol: ${(currentLeverage.currentVol * 100).toFixed(1)}% (${currentLeverage.regime} regime)`
     );
+    updateState("leverageState", {
+      currentVol: currentLeverage.currentVol,
+      currentVolBps: currentLeverage.currentVolBps,
+      regime: currentLeverage.regime,
+      targetLeverage: currentLeverage.targetLeverage,
+      reason: currentLeverage.reason,
+    });
   } catch (err) {
     console.error("Failed to update leverage:", err);
   }
@@ -183,6 +191,34 @@ async function runSignalDetection(): Promise<boolean> {
     const previousRegime = currentRegime;
     currentRegime = computeDriftRegime(volRegime, currentSignals.severity);
     console.log(`Regime: ${formatRegime(currentRegime)}`);
+
+    // Update shared state for Signal API
+    updateState("regime", {
+      volRegime: currentRegime.volRegime,
+      signalSeverity: currentRegime.signalSeverity,
+      deploymentPct: currentRegime.deploymentPct,
+      maxLeverage: currentRegime.maxLeverage,
+      rebalanceMode: currentRegime.rebalanceMode,
+      reason: currentRegime.reason,
+    });
+    updateState("signals", {
+      severity: currentSignals.severity,
+      events: currentSignals.events.map((e) => ({
+        dimension: e.dimension,
+        severity: e.severity,
+        reason: e.reason,
+        metrics: e.metrics,
+      })),
+    });
+    updateState("crossVenue", latestCrossVenue.map((cv) => ({
+      market: cv.market,
+      driftRate: cv.driftRate,
+      binanceRate: cv.binanceRate,
+      bybitRate: cv.bybitRate,
+      spread: cv.spread,
+      convergenceSignal: cv.convergenceSignal,
+      oiSignal: cv.oiSignal,
+    })));
 
     // Check if regime change warrants emergency rebalance
     if (shouldTriggerEmergencyRebalance(previousRegime, currentRegime)) {
@@ -220,6 +256,14 @@ async function runImbalanceScan(): Promise<void> {
           `-> ${dir.direction.toUpperCase()} (${dir.reason})`
       );
     });
+    updateState("imbalances", latestImbalances.slice(0, 10).map((m) => ({
+      market: m.market,
+      signal: m.signal,
+      signalStrength: m.signalStrength,
+      premiumPct: m.premiumPct,
+      annualizedFundingPct: m.annualizedFundingPct,
+      totalOI: m.totalOI,
+    })));
   } catch (err) {
     console.error("Imbalance scan error:", err);
   }
@@ -350,6 +394,12 @@ async function runFundingScan(driftClient: DriftClient): Promise<void> {
       );
     });
   }
+  updateState("fundingRankings", ranked.slice(0, 15).map((m) => ({
+    market: m.market,
+    rate24h: m.rate24h,
+    annualizedPct: m.annualizedPct,
+    costViable: passesCostGate(m.annualizedPct * 100),
+  })));
 }
 
 /**
@@ -735,6 +785,17 @@ async function main(): Promise<void> {
 
   const driftClient = await initDriftClient(connection, managerKeypair);
   console.log("Drift client connected.\n");
+
+  // Start Signal API server (non-blocking)
+  const apiPort = parseInt(process.env.API_PORT ?? "8082", 10);
+  if (process.env.ENABLE_SIGNAL_API !== "false") {
+    try {
+      const { startApiServer } = await import("../api/server");
+      startApiServer(apiPort);
+    } catch (err) {
+      console.error("Signal API failed to start:", err);
+    }
+  }
 
   // Cancel any stale open orders from previous runs
   try {
