@@ -4,7 +4,9 @@
 
 Yogi is a production-grade USDC vault on Solana that runs **dynamic tilted delta-neutral** positions on Drift — buying spot and shorting perps to eliminate price risk while collecting funding. A **5-dimensional anomaly detection engine** (including real-time cross-venue funding comparison against Binance and Bybit) dynamically adjusts tilt, deployment, and leverage. While BTC dropped 7.4% in one week, Yogi delivered **+$8.08 (+1.61%) with zero drawdown**. It's not the highest yield — it's the one that survives.
 
-**Live on Solana mainnet since March 20, 2026.** $500 deposited. Zero drawdown. Keeper running 24/7 on AWS EC2.
+> **Status (November 21, 2026): retired.** Yogi ran on Solana mainnet from March 20 to April 1, 2026. During the [April 1, 2026 Drift exploit](docs/drift-exploit-incident-report.md) the keeper closed every position and went flat in USDC, but Drift then froze deposits and withdrawals, so the USDC stayed locked inside Drift. The keeper was stopped on July 2, 2026. Drift has since relaunched as Velocity and opened DFX recovery claims (one DFX per dollar lost). Yogi's DFX allocation was claimed on November 21, 2026 with Voltr's claim tool and is being held rather than redeemed. See [Claiming DFX for a Voltr vault](docs/dfx-claim.md).
+
+**Ran on Solana mainnet from March 20 to April 1, 2026.** $500 deposited. Zero drawdown before the exploit. Keeper ran 24/7 on AWS EC2.
 
 ## Why Drift and Hyperliquid?
 
@@ -343,7 +345,7 @@ node demo/record.js            # Generate demo video (requires puppeteer + ffmpe
 
 ## Mainnet Deployment
 
-Yogi is **live on Solana mainnet** with an automated keeper running 24/7 on AWS EC2.
+Yogi was deployed on Solana mainnet with an automated keeper on AWS EC2. The keeper has been stopped since July 2, 2026 (see the status note at the top). The addresses below are kept for reference and for the DFX claim.
 
 ### On-Chain Addresses
 
@@ -446,7 +448,7 @@ Yogi is one piece of a larger build toward [Syntx](https://github.com/psyto/synt
 
 | Product | Role | Status |
 |---------|------|--------|
-| **Yogi** | Proves DN + regime engine on Drift | Mainnet, keeper live |
+| **Yogi** | Proves DN + regime engine on Drift | Retired after the Drift exploit; DFX claimed |
 | [Kodiak](https://github.com/psyto/kodiak) | Proves 5-layer yield on Hyperliquid | Mainnet, keeper live |
 | [Flow](https://github.com/fabrknt/flow) | Capital flow intelligence | Live at flow.fabrknt.com |
 | [PerpU](https://github.com/fabrknt/perpu) | Cross-protocol education | Live, 182+ lessons |
